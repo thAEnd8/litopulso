@@ -43,20 +43,19 @@ jobs:
       - name: Configurar Godot para Android
         run: |
           set -e
+          keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           mkdir -p ~/.config/godot
-          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$SDK" "$JAVA_HOME" > ~/.config/godot/editor_settings-4.3.tres
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\nexport/android/debug_keystore = "%s"\nexport/android/debug_keystore_user = "androiddebugkey"\nexport/android/debug_keystore_pass = "android"\n' "$SDK" "$JAVA_HOME" "$GITHUB_WORKSPACE/debug.keystore" > ~/.config/godot/editor_settings-4.3.tres
           cat ~/.config/godot/editor_settings-4.3.tres
-          keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          echo "--- SDK ---"
+          ls "$SDK" "$SDK/build-tools" "$SDK/platforms" "$SDK/platform-tools" | head -40
 
       - name: Importar y exportar APK
-        env:
-          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/debug.keystore
-          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
-          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p build
           godot --headless --import || true
-          godot --headless --export-debug "Android" build/litopulso.apk
+          godot --headless --verbose --export-debug "Android" build/litopulso.apk 2>&1 | tee export.log
+          test -f build/litopulso.apk || { echo "=== LINEAS DE ERROR ==="; grep -n -i -E "error|missing|not found|required|invalid|configuration" export.log | head -40; exit 1; }
           ls -la build
 
       - uses: actions/upload-artifact@v4
