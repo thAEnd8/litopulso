@@ -1,0 +1,8 @@
+Litopulso - motor Godot V8.0 (paso 2 del plan)
+Abrir en Godot 4.3: Importar -> project.godot.
+engine/ldata.gd  = cartas, robots, pasivas, piezas, eventos, dificultades
+engine/engine.gd = reglas del duelo y la IA (igual que el prototipo web)
+engine/lrng.gd   = generador de azar con semilla (necesario para PvP)
+Prueba de paridad: godot --headless --path . -s tests/parity_test.gd
+
+Escena de prueba: ui/duel.tscn (ya es la principal). Abre el proyecto y pulsa Play (F5).
