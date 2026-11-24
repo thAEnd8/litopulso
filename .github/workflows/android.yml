@@ -1,0 +1,65 @@
+name: APK Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.3"
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar Godot y plantillas de exportación
+        run: |
+          set -e
+          BASE=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable
+          curl -sL -o godot.zip $BASE/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          curl -sL -o templates.tpz $BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+          mkdir -p ~/.local/share/godot/export_templates
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Instalar Android SDK
+        run: |
+          set -e
+          SDK=${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}
+          echo "SDK=$SDK" >> $GITHUB_ENV
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          $SDK/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;23.2.8568313" > /dev/null
+
+      - name: Configurar Godot para Android
+        run: |
+          set -e
+          mkdir -p ~/.config/godot
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$SDK" "$JAVA_HOME" > ~/.config/godot/editor_settings-4.3.tres
+          cat ~/.config/godot/editor_settings-4.3.tres
+          keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Importar y exportar APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p build
+          godot --headless --import || true
+          godot --headless --export-debug "Android" build/litopulso.apk
+          ls -la build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: litopulso-apk
+          path: build/litopulso.apk
