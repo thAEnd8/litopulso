@@ -1,0 +1,343 @@
+@@ 3100 3100 161
+
+// ===== Hexx: anillos, Pulso, remanentes y ciclos =====
+const ASSIST = 'P.I.D.';
+const VER = 10;
+const RINGS = [
+  { k: 1, n: 'Llanura de cuarzo', at: 0 },
+  { k: 2, n: 'Cantera hueca', at: 300 },
+  { k: 3, n: 'Reactor frío', at: 700 },
+  { k: 4, n: 'Geoda eléctrica', at: 1200 },
+  { k: 5, n: 'Grieta del Hexx', at: 1800 },
+  { k: 6, n: 'El Hexx', at: 2500 }
+];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'HEXX'];
+const CYCLE_MS = 28 * 864e5, CYCLE_T0 = Date.UTC(2026, 10, 23, 6);
+const REM = {
+  g: { n: 'Gris', h: 1, c: '#b4bdca' },
+  b: { n: 'Azul', h: 3, c: '#5a8cff' },
+  r: { n: 'Rojo', h: 8, c: '#f0475a' },
+  o: { n: 'Dorado', h: 12, c: '#ffd34a' },
+  a: { n: 'Arcoíris', h: 24, c: '#c08bff' }
+};
+const REACTS = [
+  ['hola', '¡Hola!', 'g'], ['buena', '¡Buena!', 'g'], ['casi', 'Casi…', 'g'], ['otra', '¡Otra!', 'g'], ['ups', 'Ups', 'g'],
+  ['uf', '¡Uf!', 'b'], ['calma', 'Calma…', 'b'], ['toma', '¡Toma!', 'b'], ['rapido', '¡Rápido!', 'b'],
+  ['gg', 'Bien jugado', 'r'], ['pid', 'P.I.D. aprueba', 'r'], ['hexx', 'Nos vemos en el Hexx', 'r']
+];
+const RBY = Object.fromEntries(REACTS.map(r => [r[0], r]));
+var XPB_LAST = false;
+function invInit() {
+  if (!col) return;
+  col.inv = Object.assign({ est: 0, xpb: 0, chat: 0, re: { hola: 1, buena: 1 } }, col.inv || {});
+  col.inv.re = Object.assign({ hola: 1, buena: 1 }, col.inv.re || {});
+  col.mlv = col.mlv || {};
+}
+function xpBoost(g) {
+  XPB_LAST = false;
+  if (col && col.inv && col.inv.xpb > 0) { col.inv.xpb--; saveCol(); XPB_LAST = true; return g * 2; }
+  return g;
+}
+var HX = null, HXBOT = false;
+let ptag = '';
+try { ptag = (localStorage.getItem('lito-tag') || '').replace(/[^0-9]/g, '').slice(0, 4); } catch (e) {}
+if (ptag.length !== 4) { ptag = String(1000 + Math.floor(Math.random() * 9000)); try { localStorage.setItem('lito-tag', ptag); } catch (e) {} }
+function myTag() { return ptag; }
+const myId = () => pname + '#' + ptag;
+function hxCycle(t) { return Math.floor(((t || Date.now()) - CYCLE_T0) / CYCLE_MS); }
+function hxDefault() { return { p: 0, best: 0, cyc: hxCycle(), w: 0, l: 0, d: 0, rem: [null, null, null], note: '' }; }
+function hxSave() { try { localStorage.setItem('lito-hexx', JSON.stringify(HX)); } catch (e) {} }
+function ringOf(p) { let r = RINGS[0]; for (const x of RINGS) if (p >= x.at) r = x; return r; }
+function hxRing() { return ringOf(HX ? HX.p : 0).k; }
+function ringRule(k) { return arenaInfo(k).r; }
+function hxLoad() {
+  try { const h = JSON.parse(localStorage.getItem('lito-hexx')); HX = h && typeof h.p === 'number' ? Object.assign(hxDefault(), h) : hxDefault(); } catch (e) { HX = hxDefault(); }
+  if (!Array.isArray(HX.rem) || HX.rem.length !== 3) HX.rem = [null, null, null];
+  const c = hxCycle();
+  if (HX.cyc !== c) {
+    const k = ringOf(HX.p).k, back = Math.max(1, k - 2), old = HX.p;
+    HX.p = Math.min(HX.p, RINGS[back - 1].at); HX.cyc = c;
+    HX.note = old !== HX.p ? 'Empezó el ciclo ' + (c + 1) + ': el Hexx pulsó y te regresó al anillo ' + ROMAN[back - 1] + '.' : '';
+    hxSave();
+  }
+}
+function hxAddRem() {
+  const i = HX.rem.findIndex(x => !x); if (i < 0) return null;
+  const k = hxRing(), x = Math.random() * 100, pa = 0.5 + 0.3 * k, po = 2 + k, pr = 8 + 2 * k, pb = 25 + 3 * k;
+  const t = x < pa ? 'a' : x < pa + po ? 'o' : x < pa + po + pr ? 'r' : x < pa + po + pr + pb ? 'b' : 'g';
+  HX.rem[i] = { t, at: Date.now() + REM[t].h * 36e5 };
+  return t;
+}
+function hxGain(res, oppRing, bot) {
+  if (!HX) hxLoad();
+  const me = hxRing(), dif = (oppRing || me) - me;
+  let d;
+  if (bot) d = res === 'win' ? 12 : res === 'lose' ? -8 : 2;
+  else if (res === 'win') d = Math.max(15, 30 + 5 * dif);
+  else if (res === 'lose') d = -Math.max(10, 20 - 5 * dif);
+  else d = 5;
+  const before = HX.p, floor = ringOf(HX.p).at;
+  let est = false;
+  if (d < 0 && HX.p > floor && col && col.inv && col.inv.est > 0) { col.inv.est--; saveCol(); d = 0; est = true; }
+  HX.p = Math.max(floor, HX.p + d); HX.best = Math.max(HX.best, HX.p);
+  if (res === 'win') HX.w++; else if (res === 'lose') HX.l++; else HX.d++;
+  const rem = res === 'win' ? hxAddRem() : null;
+  hxSave();
+  return { d: HX.p - before, up: ringOf(HX.p).k > ringOf(before).k, rem, ring: ringOf(HX.p), full: res === 'win' && !rem, est };
+}
+function hxNote(g) {
+  let t = g.est ? ' · Estabilizador usado: no perdiste Pulso' : ' · ' + (g.d >= 0 ? '+' : '−') + Math.abs(g.d) + ' de Pulso';
+  if (g.up) t += ' · ¡Entraste al anillo ' + ROMAN[g.ring.k - 1] + ': ' + g.ring.n + '!';
+  if (g.rem) t += ' · Remanente ' + REM[g.rem].n.toLowerCase() + ' ganado';
+  else if (g.full) t += ' · Tus 3 espacios de remanentes están llenos';
+  return t;
+}
+function remLeft(r) {
+  const ms = r.at - Date.now(); if (ms <= 0) return '';
+  const m = Math.ceil(ms / 60000); return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : m + ' min';
+}
+function ringMapSVG(p) {
+  const k = ringOf(p).k, R = [160, 134, 108, 82, 56, 30];
+  let s = '<svg viewBox="-170 -170 340 340" role="img" aria-label="Mapa de los anillos del Hexx. Estás en ' + (k === 6 ? 'el centro' : 'el anillo ' + ROMAN[k - 1]) + '.">';
+  s += '<defs><radialGradient id="hxcore"><stop offset="0" stop-color="#ffe7a0"/><stop offset=".5" stop-color="#ff7a3a"/><stop offset="1" stop-color="#3a1410"/></radialGradient></defs>';
+  for (let i = 0; i < 5; i++) { const n = i + 1; s += '<polygon class="rg ' + (n < k ? 'done' : n === k ? 'cur' : 'lock') + '" points="' + hexPts(R[i], 0, 0) + '"/>'; }
+  s += '<g class="spk">';
+  for (let a = 0; a < 6; a++) { const t = (a * 60 - 90) * Math.PI / 180; s += '<line x1="' + (R[0] * Math.cos(t)).toFixed(1) + '" y1="' + (R[0] * Math.sin(t)).toFixed(1) + '" x2="' + (R[5] * Math.cos(t)).toFixed(1) + '" y2="' + (R[5] * Math.sin(t)).toFixed(1) + '"/>'; }
+  s += '</g><polygon class="rg core' + (k === 6 ? ' cur' : '') + '" points="' + hexPts(R[5], 0, 0) + '" fill="url(#hxcore)"/>';
+  for (let i = 0; i < 5; i++) s += '<text class="rl' + (i + 1 === k ? ' on' : i + 1 > k ? ' off' : '') + '" x="0" y="' + (-(R[i] + R[i + 1]) / 2 + 4).toFixed(0) + '">' + ROMAN[i] + '</text>';
+  s += '<text class="rl hx" x="0" y="4">HEXX</text>';
+  const ang = [150, 210, 90];
+  if (k < 6) HX.rem.forEach((r, i) => { if (!r) return; const m = (R[k - 1] + R[k]) / 2, t = ang[i] * Math.PI / 180, ready = Date.now() >= r.at; s += '<g class="rmk' + (ready ? ' ready' : '') + '" transform="translate(' + (m * Math.cos(t)).toFixed(1) + ' ' + (m * Math.sin(t)).toFixed(1) + ')"><polygon points="0,-6 5.2,0 0,6 -5.2,0" fill="' + REM[r.t].c + '"/>' + (ready ? '<circle r="10"/>' : '') + '</g>'; });
+  const m = k === 6 ? 0 : (R[k - 1] + R[k]) / 2, mx = (m * Math.cos(Math.PI / 6)).toFixed(1), my = (m * Math.sin(Math.PI / 6)).toFixed(1);
+  s += '<g class="you" transform="translate(' + mx + ' ' + my + ')"><circle class="pl" r="16"/><polygon points="' + hexPts(13, 0, 0) + '"/><circle class="dot" r="4"/></g>';
+  return s + '</svg>';
+}
+function hxRender() {
+  if (!HX || !col || !document.getElementById('ringMap')) return;
+  const r = ringOf(HX.p), nx = RINGS[r.k] || null, L = levelOf(xp).level;
+  $('#hxAv').innerHTML = avatarHTML(40);
+  $('#hxName').textContent = pname;
+  $('#hxLv').textContent = 'Nivel ' + L + ' · ' + ROBOTS[build.robot].name;
+  $('#hxPulse b').textContent = HX.p;
+  $('#hxTk b').textContent = col.tk;
+  const c = hxCycle(), left = Math.max(1, Math.ceil((CYCLE_T0 + (c + 1) * CYCLE_MS - Date.now()) / 864e5));
+  $('#cycName').textContent = 'CICLO ' + (c + 1) + ' DEL HEXX';
+  $('#cycLeft').textContent = 'Termina en ' + left + (left === 1 ? ' día' : ' días');
+  $('#ringMap').innerHTML = ringMapSVG(HX.p);
+  const pct = nx ? Math.round((HX.p - r.at) / (nx.at - r.at) * 100) : 100;
+  $('#ringCard').innerHTML = (HX.note ? '<p class="cycnote">' + HX.note + '</p>' : '') +
+    '<div class="rch"><div><span class="eyb">' + (r.k === 6 ? 'CENTRO' : 'ANILLO ' + ROMAN[r.k - 1]) + '</span><b>' + r.n + '</b></div><span class="rwl">' + HX.w + ' G · ' + HX.d + ' E · ' + HX.l + ' P</span></div>' +
+    '<p class="rrule">' + ringRule(r.k) + '</p>' + (col.inv && col.inv.est ? '<p class="rest">Estabilizadores: <b>' + col.inv.est + '</b> · protegen tu Pulso si pierdes</p>' : '') +
+    '<div class="fbar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="rpr"><span><b>' + HX.p + '</b>' + (nx ? ' / ' + nx.at : '') + ' de Pulso</span><span>' + (nx ? 'Siguiente: ' + nx.n : '¡Llegaste al centro!') + '</span></div>';
+  $('#teamRob').innerHTML = robotSVG(build.robot);
+  $('#remGrid').innerHTML = HX.rem.map((x, i) => {
+    if (!x) return '<div class="rem free"><span>Gana un duelo en el Hexx para llenarlo</span></div>';
+    const R = REM[x.t], ready = Date.now() >= x.at;
+    return '<button class="rem' + (ready ? ' ready' : '') + (x.t === 'a' ? ' rbw' : '') + '" data-rem="' + i + '" style="--rc:' + R.c + '" aria-label="Remanente ' + R.n + (ready ? ', listo para abrir' : ', faltan ' + remLeft(x)) + '"><svg viewBox="-12 -12 24 24" aria-hidden="true"><polygon points="' + hexPts(10, 0, 0) + '"/></svg><b>' + R.n + '</b><small>' + (ready ? 'LISTO · ABRIR' : remLeft(x)) + '</small></button>';
+  }).join('');
+  if (HX.rem.some(Boolean)) tipFor('rem');
+}
+function pickMissing(list) { return list.length ? list[Math.floor(Math.random() * list.length)] : null; }
+function remRoll(t) {
+  const out = [], add = (ic, txt) => out.push([ic, txt]), tk = n => { col.tk += n; add('tk', '+' + n + ' ticket' + (n > 1 ? 's' : '')); }, fr = n => { col.fr += n; add('fr', '+' + n + ' fragmentos'); };
+  const chat = n => { col.inv.chat += n; add('ch', '+' + n + ' de chatarra'); }, est = n => { col.inv.est += n; add('es', '+' + n + ' Estabilizador' + (n > 1 ? 'es' : '')); };
+  const cosm = r => { const c = newOf(r); if (grant(c.id)) add('co', 'Cosmético ' + RN[r].toLowerCase() + ': ' + c.n); else { col.fr += DUPF[r]; add('fr', c.n + ' repetido: +' + DUPF[r] + ' fragmentos'); } };
+  const piece = (rs, dupChat) => { const id = pickMissing(MOD_IDS.filter(i => i !== 'm_blind' && rs.includes(MODS[i].r) && (!MODS[i].robot || MODS[i].robot === build.robot) && !(col.mod || {})[i])); if (id) { col.mod = col.mod || {}; col.mod[id] = 1; add('pz', 'Pieza nueva: ' + MODS[id].name); } else chat(dupChat); };
+  const react = () => { const id = pickMissing(REACTS.filter(r => !col.inv.re[r[0]]).map(r => r[0])); if (id) { col.inv.re[id] = 1; add('re', 'Reacción: "' + RBY[id][1] + '"'); return true; } return false; };
+  const xpc = () => { col.inv.xpb += 3; add('xp', 'Cristal de XP: doble XP en 3 duelos'); };
+  if (t === 'g') { tk(1); fr(2); add('xp', '+20 XP'); addXp(20); if (Math.random() < 0.3) chat(3 + Math.floor(Math.random() * 3)); }
+  else if (t === 'b') { tk(2); fr(4); add('xp', '+40 XP'); addXp(40); if (Math.random() < 0.5) { if (!react()) xpc(); } else xpc(); if (Math.random() < 0.15) cosm('b'); }
+  else if (t === 'r') { tk(3); fr(8); est(1); if (Math.random() < 0.5) cosm('r'); else piece(['r', 'b'], 8); }
+  else if (t === 'o') { tk(5); fr(15); chat(8); est(2); piece(['r', 'b'], 15); }
+  else { tk(8); const id = pickMissing(CAT.filter(c => c.r === 'x' && !col.own[c.id]).map(c => c.id)); if (id) { grant(id); add('co', 'Exclusivo del Hexx: ' + CBY[id].n); } else { chat(20); est(3); } if (!react()) xpc(); }
+  saveCol(); updateBadge();
+  return out;
+}
+const RICO = { tk: '<path d="M3 8a2 2 0 0 0 0 8v3h18v-3a2 2 0 0 0 0-8V5H3z"/>', fr: '<path d="M12 3l7 5-7 13-7-13z"/>', ch: '<path d="M4 15l5-9 4 5 3-3 4 7z"/>', es: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/>', co: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>', pz: '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><rect x="9" y="9" width="6" height="6"/>', re: '<path d="M4 5h16v11H9l-5 4z"/>', xp: '<path d="M12 2l3 7 7 1-5 5 1.5 7L12 18l-6.5 4L7 15 2 10l7-1z"/>' };
+function remOpen(i) {
+  const x = HX.rem[i]; if (!x) return;
+  if (Date.now() < x.at) { AU.tap(); $('#ringCard .rrule').textContent = 'Este remanente se estabiliza en ' + remLeft(x) + '.'; return; }
+  const R = REM[x.t];
+  HX.rem[i] = null; hxSave();
+@@ 3100 3100 180
+  const got = remRoll(x.t);
+  $('#remGem').style.setProperty('--rc', R.c); $('#remGem').classList.toggle('rainbow', x.t === 'a');
+  $('#remGem').innerHTML = '<svg viewBox="-40 -40 80 80" aria-hidden="true"><polygon points="' + hexPts(30, 0, 0) + '"/><polygon class="in" points="' + hexPts(13, 0, 0) + '"/></svg>' + [...Array(10)].map((_, j) => '<i style="--a:' + j * 36 + 'deg"></i>').join('');
+  $('#remT').textContent = 'Remanente ' + R.n.toLowerCase();
+  $('#remS').innerHTML = '<ul class="remlist">' + got.map(([ic, t], j) => '<li style="--d:' + (j * 0.12 + 0.3).toFixed(2) + 's"><svg viewBox="0 0 24 24" aria-hidden="true">' + RICO[ic] + '</svg><span>' + t + '</span></li>').join('') + '</ul>';
+  $('#remSheet').hidden = false; AU.win(); buzz([30, 30, 60]);
+  hxRender();
+}
+$('#remGrid').addEventListener('click', e => { const b = e.target.closest('[data-rem]'); if (b) remOpen(+b.dataset.rem); });
+$('#remOk').addEventListener('click', () => { AU.tap(); $('#remSheet').hidden = true; });
+setInterval(() => { if (curView === 'home' && curPage === 'home' && HX && HX.rem.some(Boolean)) hxRender(); }, 30000);
+
+// ---- buscar rival en línea (sin servidor: un canal común por el que se avisan) ----
+const LOBBY = 'litopulso10/lobby';
+var SEEK = { on: false };
+function seekOpen(again) {
+  const bad = validBuild(build); if (bad) { goPage('gar'); $('#gStatus').hidden = false; $('#gStatus').textContent = bad + ' Arréglalo para buscar rival.'; return; }
+  AU.init(); if (!again) AU.tap();
+  clearInterval(SEEK.timer);
+  SEEK = { on: true, t0: Date.now(), peers: {}, pend: null, black: {}, timer: null, n: 0 };
+  $('#seekBot').hidden = true; $('#seekT').textContent = 'Buscando rival';
+  const r = ringOf(HX.p);
+  $('#seekS').textContent = (r.k === 6 ? 'Centro' : 'Anillo ' + ROMAN[r.k - 1]) + ' · ' + r.n;
+  $('#seekClk').textContent = '0:00';
+  $('#seek').hidden = false;
+  NET.start([LOBBY], seekMsg, () => {});
+  SEEK.timer = setInterval(seekTick, 1000);
+}
+function seekClose() { SEEK.on = false; clearInterval(SEEK.timer); $('#seek').hidden = true; }
+function seekCancel() { seekClose(); if (PVP.code) pvpCancel(); setTimeout(() => { if (!SEEK.on && !PVP.code) NET.stop(); }, 300); }
+function seekTick() {
+  if (!SEEK.on) return;
+  const el = Date.now() - SEEK.t0, s = Math.floor(el / 1000), me = hxRing();
+  $('#seekClk').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  if (!NET.up && s > 8) $('#seekT').textContent = 'Conectando…';
+  else $('#seekT').textContent = 'Buscando rival';
+  if (s >= 20) $('#seekBot').hidden = false;
+  if (s % 2 === 0) NET.pub(LOBBY, { t: 'seek', sid: NET.me, ring: me, v: VER });
+  if (SEEK.pend && Date.now() - SEEK.pend.at > 4000) { SEEK.black[SEEK.pend.to] = Date.now() + 10000; SEEK.pend = null; }
+  if (SEEK.pend) return;
+  const win = el < 8000 ? 0 : el < 16000 ? 1 : 5;
+  const cand = Object.values(SEEK.peers).filter(p => Date.now() - p.seen < 5000 && Math.abs(p.ring - me) <= win && !(SEEK.black[p.sid] > Date.now()) && NET.me < p.sid)
+    .sort((a, b) => Math.abs(a.ring - me) - Math.abs(b.ring - me))[0];
+  if (cand) {
+    let code = ''; for (let i = 0; i < 6; i++) code += ROOM_ABC[Math.floor(Math.random() * ROOM_ABC.length)];
+    SEEK.pend = { to: cand.sid, code, at: Date.now(), ring: cand.ring };
+    NET.pub(LOBBY, { t: 'match', to: cand.sid, from: NET.me, code, ring: me, v: VER });
+  }
+}
+function seekMsg(m) {
+  if (!SEEK.on || !m || m.v !== VER) return;
+  if (m.t === 'seek' && m.sid && m.sid !== NET.me) { SEEK.peers[m.sid] = { sid: String(m.sid), ring: Math.min(6, Math.max(1, m.ring | 0)), seen: Date.now() }; return; }
+  if (m.to !== NET.me) return;
+  if (m.t === 'match' && !SEEK.pend && typeof m.code === 'string' && /^[A-Z]{6}$/.test(m.code)) {
+    NET.pub(LOBBY, { t: 'acc', to: m.from, from: NET.me, code: m.code, ring: hxRing(), v: VER });
+    seekGo('g', m.code, m.ring);
+  } else if (m.t === 'acc' && SEEK.pend && m.code === SEEK.pend.code && m.from === SEEK.pend.to) seekGo('h', m.code, m.ring);
+}
+function seekGo(role, code, oppRing) {
+  SEEK.on = false; clearInterval(SEEK.timer);
+  $('#seekT').textContent = '¡Rival encontrado!'; $('#seekS').textContent = 'Conectando el duelo…'; $('#seekBot').hidden = true;
+  pvpReset();
+  PVP.role = role; PVP.code = code; PVP.state = 'wait'; PVP.ranked = true;
+  PVP.oppRing = Math.min(6, Math.max(1, oppRing | 0)) || hxRing();
+  pvpStartNet();
+  AU.ready(); buzz([20, 40, 20]);
+}
+function seekBot() {
+  seekCancel(); AU.tap();
+  HXBOT = true; startDuel();
+}
+$('#seekBtn').addEventListener('click', () => seekOpen());
+$('#seekCancel').addEventListener('click', () => { AU.tap(); seekCancel(); });
+$('#seekBotBtn').addEventListener('click', seekBot);
+
+// ---- reacciones en duelos en línea ----
+let emoLast = 0;
+function emoReady() { const b = $('#emoBtn'); b.hidden = !PVP.on; $('#emoPan').hidden = true; }
+function emoPanel() {
+  const own = REACTS.filter(r => col.inv.re[r[0]]);
+  $('#emoPan').innerHTML = own.map(r => '<button class="emi r-' + r[2] + '" data-emo="' + r[0] + '">' + r[1] + '</button>').join('');
+  $('#emoPan').hidden = !$('#emoPan').hidden;
+}
+function emoShow(side, id) {
+  const r = RBY[id]; if (!r) return;
+  const host = $(side === 'foe' ? '#stageFoe' : '#stageYou'); if (!host) return;
+  const rc = host.getBoundingClientRect(), el = document.createElement('div');
+  el.className = 'emoflt ' + side + ' r-' + r[2]; el.textContent = r[1];
+  el.style.left = Math.round(rc.left + rc.width / 2) + 'px'; el.style.top = Math.round(rc.top + rc.height * (side === 'foe' ? 0.15 : 0.1)) + 'px';
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2600);
+  if (side === 'foe') AU.tap();
+}
+$('#emoBtn').addEventListener('click', () => { AU.tap(); emoPanel(); });
+$('#emoPan').addEventListener('click', e => {
+  const b = e.target.closest('[data-emo]'); if (!b || !PVP.on) return;
+  $('#emoPan').hidden = true;
+  if (Date.now() - emoLast < 2500) return; emoLast = Date.now();
+  pvpSend({ t: 'emo', e: b.dataset.emo }); emoShow('you', b.dataset.emo);
+});
+
+// ---- mejorar módulos con chatarra ----
+const UPC = [0, 10, 25];
+function renderUp() {
+  const el = $('#gUp'); if (!el || !col || !col.inv) return;
+  const own = MOD_IDS.filter(id => (col.mod || {})[id] && (!MODS[id].robot || MODS[id].robot === (draft || build).robot));
+  el.innerHTML = '<div class="guph"><b>Mejorar módulos</b><span>Chatarra: <em>' + col.inv.chat + '</em></span></div>' + (own.length ? own.map(id => {
+    const lv = col.mlv[id] || 1, m = MODS[id], f = { mlv: col.mlv }, max = lv >= 3, cost = UPC[lv] || 0;
+    const now = m.costHp ? modCH(f, id) + ' de vida' : modCE(f, id) + ' de energía';
+    const nxt = max ? '' : (m.costHp ? Math.round(m.costHp * [1, .75, .5][lv]) + ' de vida' : Math.max(0, m.costEn - lv) + ' de energía');
+    return '<div class="upr"><div><b>' + m.name + ' · Nv ' + lv + '</b><small>Cuesta ' + now + (max ? ' · nivel máximo' : ' → ' + nxt) + '</small></div>' + (max ? '' : '<button class="chipbtn" data-up="' + id + '"' + (col.inv.chat < cost ? ' disabled' : '') + '>' + cost + ' chatarra</button>') + '</div>';
+  }).join('') : '<p class="sub">Aún no tienes módulos. Salen en la ruleta y en los remanentes.</p>');
+}
+$('#gUp').addEventListener('click', e => {
+  const b = e.target.closest('[data-up]'); if (!b) return;
+  const id = b.dataset.up, lv = col.mlv[id] || 1, cost = UPC[lv]; if (lv >= 3 || col.inv.chat < cost) return;
+  col.inv.chat -= cost; col.mlv[id] = lv + 1; saveCol(); AU.ready(); buzz(30); renderGarage();
+});
+
+// ---- inventario en el perfil ----
+function renderInv() {
+  const el = $('#profInv'); if (!el || !col || !col.inv) return;
+  const iv = col.inv, nre = REACTS.filter(r => iv.re[r[0]]).length;
+  const cell = (ic, n, t) => '<div class="iv"><svg viewBox="0 0 24 24" aria-hidden="true">' + RICO[ic] + '</svg><b>' + n + '</b><small>' + t + '</small></div>';
+  el.innerHTML = '<div class="ivg">' + cell('es', iv.est, 'Estabilizadores') + cell('xp', iv.xpb, 'Duelos con XP ×2') + cell('ch', iv.chat, 'Chatarra') + cell('re', nre + '/' + REACTS.length, 'Reacciones') + '</div>' +
+    '<div class="rel">' + REACTS.map(r => '<span class="emi r-' + r[2] + (iv.re[r[0]] ? '' : ' lk') + '">' + (iv.re[r[0]] ? r[1] : '???') + '</span>').join('') + '</div>' +
+    '<p class="sub">El Estabilizador se usa solo cuando pierdes en el Hexx. La chatarra mejora tus módulos en el Garaje.</p>';
+}
+
+// ---- duelo guiado (tutorial jugando) ----
+var GUIDE = { on: false, i: 0 };
+const GUIDE_YOU = () => ({ robot: 'petreo', cards: ['atk', 'guard', 'dodge', 'skill'], passives: ['core', 'reflex'], mods: [] });
+const GUIDE_FOE = () => ({ robot: 'granito', cards: ['atk', 'guard', 'dodge', 'skill'], passives: passivesOf('granito').slice(0, CFG.passiveSlots), mods: [] });
+const GUIDE_STEPS = [
+  { you: 'atk', foe: 'dodge', say: 'Cada turno, tú y tu rival eligen una carta en secreto y se revelan al mismo tiempo. Empieza con Martillo.' },
+  { you: 'guard', foe: 'atk', say: 'Ataque gana a Desvío: le pegaste. Ahora tu pulsera detecta que el rival va a atacar: usa Muro.' },
+  { you: 'skill', foe: 'guard', say: 'Defensa frena el Ataque y te da energía extra. Ahora se va a cubrir: Fractura rompe la Defensa. Cuesta 6 de energía (el número de la carta).' },
+  { you: 'dodge', foe: 'skill', say: 'Habilidad rompe la Defensa. Viene una Habilidad del rival: esquívala con Giro.' },
+  { you: 'atk', foe: 'dodge', say: 'Desvío evita la Habilidad. Cada acierto sube tu racha (abajo, junto a tu energía). Remata con Martillo.' },
+  { you: 'over', foe: 'atk', say: '¡Racha 5! Tu Sobrecarga está lista: tócala para quitar 60 de un golpe.' }
+];
+function guideStart() {
+  if (PVP.code) return;
+  tutEnd(); HXBOT = false;
+  GUIDE = { on: true, i: 0 };
+  startDuel();
+}
+function guideSetup(g) {
+  g.foe.maxHp = 150; g.foe.hp = 150; g.foe.edge = 0;
+  g.you.maxHp = Math.max(g.you.maxHp, 150); g.you.hp = g.you.maxHp;
+}
+function guideCur() { return GUIDE_STEPS[Math.min(GUIDE_STEPS.length - 1, (G ? G.turn : 1) - 1)]; }
+function guideOk(card) { const st = guideCur(); return st && (card.id === st.you || (st.you === 'over' && card.type === 'over')); }
+function guideEl(st) { if (st.you === 'over') return $('#overBtn'); const i = G.you.hand.findIndex(c => c.id === st.you); return i < 0 ? null : $$('#hand .card')[i]; }
+function guideStep() {
+  if (!GUIDE.on || !G || G.over) return;
+  const st = guideCur(), n = Math.min(GUIDE_STEPS.length, G.turn);
+  if (st.you === 'over') { G.you.sc = Math.max(G.you.sc, overNeed(G.you)); G.foe.hp = Math.min(G.foe.hp, 55); }
+  else { const c = CARDS[st.you]; if (G.you.en < c.cost) G.you.en = c.cost; }
+  render();
+  $$('.hl').forEach(e => e.classList.remove('hl'));
+  $$('#hand .card, #overBtn').forEach(e => e.classList.add('gdim'));
+  const el = guideEl(st); if (el) { el.classList.remove('gdim'); el.classList.add('hl'); }
+  $('#tutT').textContent = st.say;
+  $('#tutN').textContent = 'Paso ' + n + ' de ' + GUIDE_STEPS.length;
+  $('#tutNext').hidden = true;
+  $('#tutSkip').onclick = () => { AU.tap(); guideSkip(); };
+  $('#tut').classList.remove('bot'); $('#tut').classList.add('guide');
+  $('#tut').hidden = false;
+}
+function guideHide() { $('#tut').hidden = true; $$('.gdim').forEach(e => e.classList.remove('gdim')); $$('.hl').forEach(e => e.classList.remove('hl')); }
+function guideNudge() { const el = guideEl(guideCur()); buzz(25); if (el) { el.classList.remove('nudge'); void el.offsetWidth; el.classList.add('nudge'); } }
+function guideFoe() {
+  const st = guideCur(), c = CARDS[st.foe];
+  if (G.foe.en < c.cost) G.foe.en = c.cost;
+  G.foe.sc = Math.min(G.foe.sc, 2);
+  return c;
+}
+function guideDone() { try { localStorage.setItem('lito-guided', '1'); } catch (e) {} }
+function guideStop() { GUIDE.on = false; guideHide(); $('#tutNext').hidden = false; $('#tut').classList.remove('guide'); }
+function guideSkip() { guideStop(); guideDone(); duelToken++; busy = false; $('#end').hidden = true; show('home'); goPage('home', true); setTimeout(guidePost, 400); }
