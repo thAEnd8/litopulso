@@ -1,0 +1,9 @@
+{
+  "appId": "com.thaend.litopulso",
+  "appName": "Litopulso",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0e1319",
+    "allowMixedContent": false
+  }
+}
