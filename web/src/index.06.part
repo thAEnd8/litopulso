@@ -1,0 +1,333 @@
+function renderSnd() {
+  $$('.snd').forEach(b => { b.classList.toggle('off', !AU.on); b.setAttribute('aria-pressed', String(AU.on)); b.title = AU.on ? 'Sonido activado' : 'Sonido apagado'; });
+}
+document.addEventListener('pointerdown', () => AU.init(), { once: true });
+// ---- puente con la app de Android (Capacitor); en navegador no hace nada ----
+const CAP = window.Capacitor, NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
+const plug = n => { if (!NATIVE) return null; try { return (CAP.Plugins && CAP.Plugins[n]) || (CAP.registerPlugin && CAP.registerPlugin(n)) || null; } catch (e) { return null; } };
+const HAP = plug('Haptics');
+function buzz(p) {
+  try {
+    if (HAP) { const a = Array.isArray(p) ? p : [p]; let t = 0; a.forEach((d, i) => { if (i % 2 === 0) setTimeout(() => HAP.vibrate({ duration: d }).catch(() => {}), t); t += d; }); return; }
+    if (navigator.vibrate) navigator.vibrate(p);
+  } catch (e) {}
+}
+
+// ---- robots (placeholders 2D; después van tus modelos 3D) ----
+function robotSVG(id) {
+  const extra = id === 'granito'
+    ? '<rect class="s3" x="2" y="40" width="30" height="16" rx="4"/><rect class="s3" x="88" y="40" width="30" height="16" rx="4"/><rect class="s2" x="38" y="14" width="44" height="7" rx="2"/>'
+    : id === 'cuarzo'
+    ? '<path class="s3" d="M60 20 L51 1 L60 9 L69 1 Z"/><path class="s3" d="M24 48 L12 26 L32 42 Z"/><path class="s3" d="M96 48 L108 26 L88 42 Z"/>'
+    : '<path class="crack" d="M60 18 V8"/><circle class="core" cx="60" cy="6" r="3.5"/>';
+  return '<svg viewBox="0 0 120 140" aria-hidden="true">' +
+    '<rect class="s2" x="38" y="102" width="16" height="28" rx="3"/><rect class="s2" x="66" y="102" width="16" height="28" rx="3"/>' +
+    '<rect class="s3" x="33" y="127" width="26" height="9" rx="2"/><rect class="s3" x="61" y="127" width="26" height="9" rx="2"/>' +
+    '<rect class="s2" x="12" y="54" width="16" height="40" rx="4"/><rect class="s2" x="92" y="54" width="16" height="40" rx="4"/>' +
+    '<rect class="s3" x="8" y="90" width="24" height="15" rx="4"/><rect class="s3" x="88" y="90" width="24" height="15" rx="4"/>' +
+    '<rect class="s1" x="28" y="50" width="64" height="56" rx="8"/>' +
+    '<path class="crack" d="M34 58 L44 70 L38 80 L46 94"/><path class="crack" d="M86 60 L78 72 L84 84"/>' +
+    '<circle class="core" cx="60" cy="78" r="11"/><circle class="core-in" cx="60" cy="78" r="5"/>' +
+    '<rect class="s3" x="22" y="46" width="22" height="10" rx="3"/><rect class="s3" x="76" y="46" width="22" height="10" rx="3"/>' +
+    '<rect class="s1" x="40" y="18" width="40" height="30" rx="7"/>' +
+    '<rect class="core" x="46" y="28" width="28" height="9" rx="3"/>' + extra + '</svg>';
+}
+
+
+// ---- información de cartas, pasivas y robots ----
+const INFO = {
+  atk:     { pro: 'Gana a el Desvío y su costo es medio.', con: 'La Defensa la frena por completo.' },
+  fast:    { pro: 'Barata (2): casi siempre puedes lanzarla.', con: 'Hace poco daño (15).' },
+  heavy:   { pro: 'Daño muy alto para un Ataque (27).', con: 'Cuesta 4: si te la frenan pierdes mucha energía.' },
+  guard:   { pro: 'Costo 1 y frena todo el Ataque.', con: 'No hace daño y la Habilidad la rompe.' },
+  counter: { pro: 'Además de frenar, devuelve 8 de daño.', con: 'Cuesta 2 y la Habilidad también la rompe.' },
+  dodge:   { pro: 'Costo 1 y evita la Habilidad completa.', con: 'No hace daño y el Ataque la golpea.' },
+  feint:   { pro: 'Evita la Habilidad y, si te atacan, solo recibes la mitad.', con: 'Cuesta 2; no hace daño.' },
+  skill:   { pro: 'Daño alto (35) y rompe la Defensa.', con: 'Cuesta 6: puede dejarte sin energía. El Desvío la evita.' },
+  light:   { pro: 'Habilidad más barata (4) para romper Defensas antes.', con: 'Hace menos daño (21).' },
+  impeto:  { pro: 'Cada golpe que conecta te devuelve 1 de energía.', con: 'Daño medio (16) y la Defensa la frena.' },
+  alud:    { pro: 'Daño muy alto (30) por 4 de energía.', con: 'Si el rival usa Defensa, pierdes 2 de energía más.' },
+  barrera: { pro: 'Frena el Ataque y recuperas 2 de energía.', con: 'Cuesta 2 y la Habilidad la rompe.' },
+  fortaleza:{ pro: 'Frena el Ataque y la Sobrecarga completa; otras Defensas frenan solo la mitad de la Sobrecarga.', con: 'Cuesta 2 y la Habilidad la rompe, como a toda Defensa.' },
+  cauce:   { pro: 'Evita la Habilidad y recuperas 4 de energía.', con: 'Cuesta 2 y el Ataque la golpea.' },
+  espejismo:{ pro: 'Evita la Habilidad y el rival pierde 4 de energía.', con: 'Cuesta 2 y el Ataque la golpea.' },
+  iman:    { pro: 'Si golpea, el rival pierde 2 de energía.', con: 'Daño bajo (15) y el Desvío la evita.' },
+  grito:   { pro: 'Si golpea, el rival no puede usar Desvío el siguiente turno.', con: 'Daño bajo (17) y el Desvío la evita.' },
+  crush:   { pro: 'Daño enorme (44).', con: 'Cuesta 8: solo la usas con mucha energía y es fácil de desviar.' },
+  g_roca:   { pro: '+20 de vida: aguanta más golpes.', con: 'No arregla su energía inicial baja.' },
+  g_carga:  { pro: 'Arranca con 6 de energía en vez de 3.', con: 'Solo ayuda al inicio del duelo.' },
+  g_coraza: { pro: 'Cada defensa exitosa te da 4 de energía.', con: 'Exige usar bien Defensa y Desvío.' },
+  g_terco:  { pro: 'Cuando vas perdiendo, tus golpes hacen +7.', con: 'Solo se activa con menos vida que el rival.' },
+  c_reson:  { pro: '+2 de energía en turnos sin daño.', con: 'Poco útil si hay golpes en cada turno.' },
+  c_filo:   { pro: '+4 de daño en todos tus golpes.', con: 'No protege a un robot de poca vida.' },
+  c_templa: { pro: '+16 de vida: compensa su fragilidad.', con: 'Sigue siendo el robot con menos vida.' },
+  c_destello: { pro: 'Arranca con 10 de energía y +2 de daño.', con: 'Solo ayuda al inicio del duelo.' },
+  core:    { pro: 'Energía gratis en turnos tranquilos; ayuda con cartas caras.', con: 'No sirve si siempre hay golpes en cada turno.' },
+  reflex:  { pro: 'Premia defender bien: +4 de energía por acierto.', con: 'Si casi no usas Defensa ni Desvío, no hace nada.' },
+  stone:   { pro: 'Más vida desde el inicio; siempre funciona.', con: 'No te da ninguna ventaja en energía ni en daño.' },
+  fury:    { pro: 'Cuando vas perdiendo, tus golpes hacen +6.', con: 'Solo se activa si tienes menos vida que el rival.' },
+  petreo:  { pro: 'Sin puntos débiles: vida y energía parejas.', con: 'No destaca en nada.' },
+  granito: { pro: 'La mayor vida (196): aguanta más golpes.', con: 'Empieza con solo 3 de energía: arranque lento.' },
+  cuarzo:  { pro: 'Empieza con 8 de energía: puede abrir con una Habilidad.', con: 'La menor vida (142): cada golpe duele más.' }
+};
+function infoTile(kind, id) { return '<span class="info" role="button" tabindex="0" aria-label="Información" data-info="' + kind + ':' + id + '">i</span>'; }
+function openInfo(kind, id) {
+  const o = kind === 'card' ? CARDS[id] : kind === 'pass' ? PASSIVES[id] : ROBOTS[id], x = INFO[id] || {};
+  $('#infoT').textContent = o.name;
+  $('#infoK').textContent = kind === 'card' ? TYPE_NAME[o.type] + ' · cuesta ' + o.cost + ' de energía' + (cardLevel(id) > levelOf(xp).level ? ' · se desbloquea en el nivel ' + cardLevel(id) : '') : kind === 'pass' ? 'Pasiva (siempre activa)' : 'Robot · ' + o.short;
+  $('#infoD').textContent = o.text;
+  $('#infoP').textContent = x.pro ? 'Ventaja: ' + x.pro : '';
+  $('#infoC').textContent = x.con ? 'Desventaja: ' + x.con : '';
+  $('#info').hidden = false; $('#closeInfo').focus();
+}
+function infoClick(e) {
+  const t = e.target.closest('.info'); if (!t) return false;
+  e.stopPropagation(); AU.tap();
+  const [k, id] = t.dataset.info.split(':'); openInfo(k, id); return true;
+}
+let diff = 'normal';
+try { const d = localStorage.getItem('duelo-diff'); if (DIFFS[d]) diff = d; } catch (e) {}
+function renderDiff() {
+  $('#diffRow').innerHTML = DIFF_IDS.map(id => '<button role="radio" aria-checked="' + (id === diff) + '" class="' + (id === diff ? 'on' : '') + '" data-diff="' + id + '">' + DIFFS[id].name + '</button>').join('');
+  const xt = XP_TABLE[diff];
+  $('#diffText').textContent = 'Rival ' + DIFFS[diff].name.toLowerCase() + ': ' + DIFFS[diff].text + ' Ganas ' + xt.win + ' XP, empatas ' + xt.draw + ' y pierdes ' + xt.lose + '. ' + recText(diff);
+}
+
+
+// ---- tutorial del asistente ----
+const TUT = [
+  { t: 'Hola, soy tu asistente. Tu pulsera ya conectó con tu canalizador. Gana quien deje al rival sin vida; si pasan 30 turnos, gana quien tenga más. Tu equipo (robot, 5 cartas de 10 y 2 pasivas) se arma en el Garaje.', sel: '#foe', pos: 'bot' },
+  { t: 'Abajo a la derecha están tus datos: vida, energía y racha. Arriba a la izquierda, los del rival. Toca un robot o su caja para ver pasivas y módulos.', sel: '#you', pos: 'top' },
+  { t: 'Tú y el rival eligen una carta en secreto y se revelan a la vez en el centro. Cada carta es de un tipo, y el tipo decide quién gana.', sel: '#slotFoe, #slotYou', pos: 'bot' },
+  { t: 'Ataque gana a el Desvío y pierde contra la Defensa. Habilidad rompe la Defensa y pierde contra el Desvío.', sel: '#hand', pos: 'top' },
+  { t: 'Defensa frena el Ataque y pierde contra la Habilidad. Desvío evita la Habilidad y pierde contra el Ataque.', sel: '#hand', pos: 'top' },
+  { t: 'Cada carta de un mismo tipo cambia el costo, el daño o un efecto. El número de la esquina es lo que cuesta en energía; las cartas apagadas no te alcanzan.', sel: '#hand', pos: 'top' },
+  { t: 'Energía: empiezas con la de tu robot, recuperas 2 por turno (máximo 10) y 1 extra si tu Defensa o Desvío aciertan.', sel: '#you-pips', pos: 'top' },
+  { t: 'Racha: sube cuando aciertas o ganas el intercambio, y se pierde si te golpean sin que golpees o si tu golpe falla. Con 5 puedes usar la Sobrecarga: quita 60, la Defensa solo frena la mitad y el Desvío la evita. El rival también tiene la suya. ¡Elige tu primera carta!', sel: '#you-sc', pos: 'top' }
+];
+const TUT_HOME = [
+  { t: 'Hola, soy tu asistente. Este es tu equipo: toca "Editar" para cambiarlo.', sel: '#buildCard', pos: 'bot' },
+  { get t() { return NAVTXT[document.documentElement.dataset.nav] || NAVTXT.bar; }, get sel() { return document.documentElement.dataset.nav === 'bar' ? '#hexnav' : '#nucleoBtn'; }, pos: 'top' },
+  { t: 'Elige la dificultad del rival y toca Jugar.', sel: '#diffRow', pos: 'bot' }
+];
+const TUT_GARAGE = [
+  { t: 'Este es el Garaje. Elige tu robot: cambia tu vida y energía. Toca la "i" para ver sus ventajas y desventajas.', sel: '#gRobots', pos: 'bot', scroll: 'start' },
+  { t: 'Elige tus 5 cartas. Empiezas con 4 y desbloqueas más al subir de nivel. Toca una para ponerla o quitarla.', sel: '#gCards', pos: 'bot', scroll: 'start', pre: () => { gTab = 'cards'; renderGarage(); } },
+  { t: 'Elige 2 pasivas de las 4 de tu robot. Funcionan solas. Cuando termines, toca Jugar.', sel: '#gPass', pos: 'bot', scroll: 'start', pre: () => { gTab = 'pass'; renderGarage(); } }
+];
+const TUT_DUEL = [
+  { t: 'Gana quien deje al rival sin vida; si pasan 30 turnos, gana quien tenga más.', sel: '#foe', pos: 'bot' },
+  { t: 'Abajo a la derecha están tu vida, energía y racha; arriba a la izquierda, las del rival.', sel: '#you', pos: 'top' },
+  { t: 'Cada turno ambos eligen una carta en secreto y se revelan a la vez.', sel: '#slotFoe, #slotYou', pos: 'bot' },
+  { t: 'Ataque gana a Desvío, Desvío a Habilidad, Habilidad a Defensa y Defensa a Ataque. El número de la carta es su costo; recuperas 2 de energía por turno.', sel: '#hand', pos: 'top' },
+  { t: 'Racha: sube cuando aciertas. Con 5 puedes usar la Sobrecarga: 60 de daño.', sel: '#you-sc', pos: 'top' }
+];
+const TUT_KEYS = { home: 'duelo-tut-home3', garage: 'duelo-tut-garage', duel: 'duelo-tut2', mods: 'duelo-tut-mods', modduel: 'duelo-tut-modduel', arena: 'duelo-tut-arena', arenanew: 'duelo-tut-arenanew', hist: 'duelo-tut-hist' };
+const TUT_MODS = [
+  { t: 'Módulos: piezas que le pones a tu robot (cabeza, cuerpo, piernas o una especial). Se equipan aquí; el segundo espacio universal se abre en el nivel 20.', sel: '#gModSlots', pos: 'bot', scroll: 'start', pre: () => { gTab = 'mods'; renderGarage(); } },
+  { t: 'Cada pieza es un botón de 1 uso por duelo: tiene un efecto y un costo (vida o energía). Las que no tienes salen atenuadas: las consigues en la ruleta y venciendo jefes.', sel: '#gMods', pos: 'bot', scroll: 'start' }
+];
+const TUT_MODDUEL = [{ t: 'Tus módulos aparecen aquí como botones. Cada uno se usa una sola vez por duelo y no gasta tu turno, pero cuesta vida o energía. Úsalos en el momento justo.', sel: '#modRow', pos: 'top' }];
+const TUT_ARENA = [{ t: 'Arenas: cada una cambia una regla del duelo (golpes más fuertes, más energía, Sobrecarga más fácil o eventos más seguidos). Empiezas con la 1; las demás se desbloquean al vencer a los jefes de Historia.', sel: '#arenaRow', pos: 'top' }];
+const TUT_ARENANEW = [{ t: '¡Desbloqueaste una arena nueva! Elígela aquí antes de jugar: cada una cambia una regla del duelo.', sel: '#arenaRow', pos: 'top' }];
+const TUT_HIST = [{ t: 'Historia: son 5 capítulos. Cada victoria en Normal o Difícil sube un peldaño y con 5 puedes combatir al jefe del capítulo. Vencerlo da una pieza exclusiva y desbloquea el siguiente capítulo y su arena.', sel: '#hisList', pos: 'bot' }];
+let tutRes = null, tutKey = null;
+function tutEnd() {
+  if (tutKey) { try { localStorage.setItem(tutKey, '1'); } catch (e) {} tutKey = null; }
+  $('#tut').hidden = true; $$('.hl').forEach(e => e.classList.remove('hl'));
+  if (tutRes) { const r = tutRes; tutRes = null; r(); }
+}
+function runTut(steps, name) {
+  const key = TUT_KEYS[name];
+  try { if (localStorage.getItem(key) === '1') return Promise.resolve(); } catch (e) {}
+  tutEnd();
+  return new Promise(res => {
+    tutRes = res; tutKey = key; let i = 0;
+    const step = () => {
+      $$('.hl').forEach(e => e.classList.remove('hl'));
+      const s = steps[i];
+      if (s.pre) s.pre();
+      $('#tutT').textContent = s.t;
+      $('#tutN').textContent = (i + 1) + ' de ' + steps.length;
+      $('#tutNext').textContent = i === steps.length - 1 ? 'Entendido' : 'Siguiente';
+      $$(s.sel).forEach(el => el.classList.add('hl'));
+      if (s.scroll) { const el = $(s.sel); try { if (el) el.scrollIntoView({ block: s.scroll, behavior: RM ? 'auto' : 'smooth' }); } catch (e) {} }
+      $('#tut').classList.toggle('bot', s.pos === 'bot');
+      $('#tut').hidden = false;
+    };
+    $('#tutNext').onclick = () => { AU.tap(); if (++i >= steps.length) tutEnd(); else step(); };
+    $('#tutSkip').onclick = () => { AU.tap(); tutEnd(); };
+    step();
+  });
+}
+
+// ---- equipo guardado ----
+// ---- niveles y progreso (los números son propuestas) ----
+const MAX_LEVEL = 20;
+const XP_NEED = [40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400];      // XP para pasar del nivel n al n+1
+const UNLOCK = { 1: ['atk', 'guard', 'dodge', 'skill'], 2: ['fast'], 3: ['counter'], 4: ['feint'], 5: ['light'], 6: ['impeto'], 7: ['barrera'], 8: ['cauce'], 9: ['iman'], 10: ['heavy'], 12: ['espejismo'], 14: ['grito'], 16: ['fortaleza'], 18: ['alud'], 20: ['crush'] };
+const XP_TABLE = { easy: { win: 20, draw: 8, lose: 4 }, normal: { win: 45, draw: 22, lose: 12 }, hard: { win: 75, draw: 38, lose: 18 } };
+let xp = 0;
+try { const v = +localStorage.getItem('duelo-xp'); if (v > 0) xp = v; } catch (e) {}
+function saveXp() { try { localStorage.setItem('duelo-xp', String(xp)); } catch (e) {} }
+function levelOf(total) {
+  let lv = 1, left = total;
+  while (lv < MAX_LEVEL && left >= XP_NEED[lv - 1]) { left -= XP_NEED[lv - 1]; lv++; }
+  return { level: lv, into: lv >= MAX_LEVEL ? 0 : left, need: lv >= MAX_LEVEL ? 0 : XP_NEED[lv - 1] };
+}
+var mkt = (function () { try { return JSON.parse(localStorage.getItem('duelo-mkt')) || {}; } catch (e) { return {}; } })(); if (!Array.isArray(mkt.b)) mkt.b = [];
+const PRICE = { g: 1, b: 2, r: 3 };
+function natLevel(id) { for (const l in UNLOCK) if (UNLOCK[l].includes(id)) return +l; return 1; }
+function cardLevel(id) { return mkt.b.includes(id) ? 1 : natLevel(id); }
+function mktPts() { return Math.max(0, levelOf(xp).level - 1 - mkt.b.reduce((t, id) => t + PRICE[CARDS[id].r], 0)); }
+function renderMer() {
+  const pts = mktPts(), lv = levelOf(xp).level;
+  const l = CARD_IDS.filter(id => natLevel(id) > lv && !mkt.b.includes(id)).sort((a, b) => PRICE[CARDS[a].r] - PRICE[CARDS[b].r]);
+  $('#merHead').innerHTML = '<div class="rstats two"><div class="rs"><b>' + pts + '</b><small>Puntos de habilidad</small></div><div class="rs"><b>1 · 2 · 3</b><small>Precio gris · azul · rojo</small></div></div><small class="fbl">Ganas 1 punto por nivel. Compra una carta antes de que te toque.</small>';
+  $('#merList').innerHTML = l.length ? l.map(id => { const c = CARDS[id], p = PRICE[c.r];
+    return '<div class="mk"><div class="ctile r-' + c.r + '"><span class="cost">' + c.cost + '</span>' + infoTile('card', id) + cardFace(c) + '<em>' + statOf(c) + '</em></div><button class="btn mkb" data-id="' + id + '"' + (pts < p ? ' disabled' : '') + '>Comprar · ' + p + ' pts</button><small>o nivel ' + natLevel(id) + '</small></div>'; }).join('') : '<p class="sub">Ya tienes todas las cartas.</p>';
+}
+$('#merList').addEventListener('click', e => { if (infoClick(e)) return; const b = e.target.closest('.mkb'); if (!b || b.disabled) return; const id = b.dataset.id; if (mktPts() < PRICE[CARDS[id].r]) return; mkt.b.push(id); try { localStorage.setItem('duelo-mkt', JSON.stringify(mkt)); } catch (x) {} AU.tap(); applyProgress(); renderMer(); });
+function unlockedIds(level) { return CARD_IDS.filter(id => cardLevel(id) <= level); }
+function applyProgress() { setPool(unlockedIds(levelOf(xp).level)); }
+// Color del núcleo: el tono de su mineral, del más claro (nivel 1) al más oscuro (nivel 10)
+function hexToHsl(h) {
+  const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let hh = 0;
+  if (d) hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  const l = (mx + mn) / 2, s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+  return [(hh * 60 + 360) % 360, s * 100];
+}
+const STAR_XP = 100;
+function starsOf(total) { const base = XP_NEED.slice(0, MAX_LEVEL - 1).reduce((a, b) => a + b, 0); return Math.max(0, Math.floor((total - base) / STAR_XP)); }
+function starProg(total) { const base = XP_NEED.slice(0, MAX_LEVEL - 1).reduce((a, b) => a + b, 0); return Math.max(0, total - base) % STAR_XP; }
+let pname = 'Jugador';
+try { const n = localStorage.getItem('duelo-name'); if (n) pname = n.slice(0, 14); } catch (e) {}
+function coreColor(robotId, level) {
+  if (level >= MAX_LEVEL) return '#d5dde8';
+  const [h, s] = hexToHsl(ROBOTS[robotId].color);
+  const l = 84 - (level - 1) * (46 / (MAX_LEVEL - 1));
+  return 'hsl(' + Math.round(h) + ',' + Math.round(s) + '%,' + Math.round(l) + '%)';
+}
+applyProgress();
+function defaultBuild() { return { robot: 'petreo', cards: unlockedIds(levelOf(xp).level).slice(0, CFG.handSize), passives: ['core', 'reflex'] }; }
+let build = defaultBuild();
+try { const b = JSON.parse(localStorage.getItem('duelo-build')); if (b && !validBuild(b)) build = b; } catch (e) {}
+function saveBuild() { try { localStorage.setItem('duelo-build', JSON.stringify(build)); } catch (e) {} }
+const ACCENTS = [['auto', 'Automático (color del robot)', null], ['cian', 'Cian', '#3fd9d2'], ['violeta', 'Violeta', '#b79cff'], ['verde', 'Verde', '#8ee26b'], ['naranja', 'Naranja', '#ffa24a'], ['rosa', 'Rosa', '#ff7eb3']];
+let accent = 'auto';
+try { const a = localStorage.getItem('duelo-accent'); if (ACCENTS.some(x => x[0] === a)) accent = a; } catch (e) {}
+function accentHex(id) { const a = ACCENTS.find(x => x[0] === accent); return armorHex(id) || (a && a[2]) || ROBOTS[id].color; }
+function setColor(robotId) { const tb = document.querySelector('#themeBtn'); if (tb) { tb.style.setProperty('--sw', accentHex(robotId)); const ts = document.querySelector('#themeSub'); if (ts) ts.textContent = armorHex(robotId) ? 'Manda el color equipado de tu colección' : (ACCENTS.find(a => a[0] === accent) || ACCENTS[0])[1]; } document.body.classList.toggle('rainbow', levelOf(xp).level >= MAX_LEVEL); document.body.style.setProperty('--you', accentHex(robotId)); document.body.style.setProperty('--core', coreColor(robotId, levelOf(xp).level)); }
+const byOrder = (a, b) => CARD_IDS.indexOf(a) - CARD_IDS.indexOf(b);
+
+// ---- récord ----
+let rec = { w: 0, d: 0, l: 0 };
+try { const r = JSON.parse(localStorage.getItem('duelo-rec')); if (r && typeof r.w === 'number') rec = r; } catch (e) {}
+function saveRec() { try { localStorage.setItem('duelo-rec', JSON.stringify(rec)); } catch (e) {} }
+let recD = { easy: { w: 0, d: 0, l: 0 }, normal: { w: 0, d: 0, l: 0 }, hard: { w: 0, d: 0, l: 0 } };
+try { const r = JSON.parse(localStorage.getItem('duelo-recd')); if (r && r.easy && r.normal && r.hard) recD = r; } catch (e) {}
+function saveRecD() { try { localStorage.setItem('duelo-recd', JSON.stringify(recD)); } catch (e) {} }
+function recText(k) {
+  const r = recD[k], n = r.w + r.d + r.l;
+  return n ? 'Tu récord: ' + r.w + ' ganadas, ' + r.d + ' empates, ' + r.l + ' perdidas (' + Math.round(r.w / n * 100) + '% de victorias).' : 'Aún no has jugado en esta dificultad.';
+}
+function renderRec() { $$('.rec').forEach(el => { el.textContent = 'G ' + rec.w + ' · E ' + rec.d + ' · P ' + rec.l; }); }
+
+// ---- navegación ----
+let curView = 'home', duelToken = 0;
+(function cycleInit() {
+  const o = ['attack', 'dodge', 'skill', 'guard'];
+  const el = document.createElement('div'); el.className = 'cycle'; el.setAttribute('aria-label', 'Cada tipo gana al siguiente');
+  el.innerHTML = o.map(t => '<span class="cico sm" style="--tc:' + TCOL[t] + '" title="' + TYPE_NAME[t] + '">' + icon(t) + '</span>').join('<i>›</i>') + '<i>↻</i>';
+  const s = document.querySelector('.battle'); if (s) s.insertAdjacentElement('afterend', el);
+})();
+function show(v) {
+  if (typeof tutEnd === 'function') tutEnd();
+  if (v !== 'duel') document.body.classList.remove('lowhp');
+  ['home', 'garage', 'duel'].forEach(n => { $('#' + n + 'View').hidden = n !== v; });
+  curView = v;
+  try { window.scrollTo(0, 0); } catch (e) {}
+  if (v === 'home') renderHome();
+  if (v === 'garage') renderGarage();
+}
+
+// ===== inicio =====
+function lvlHTML() {
+  const L = levelOf(xp);
+  const st = starsOf(xp);
+  const bar = L.level >= MAX_LEVEL ? '<div class="xpbar"><i style="width:' + starProg(xp) + '%"></i></div><small>' + (st ? '<span class="star">★' + st + '</span> · ' : '') + 'Máx. · ' + starProg(xp) + '/' + STAR_XP + ' a ★</small>' :
+    '<div class="xpbar"><i style="width:' + Math.round(L.into / L.need * 100) + '%"></i></div><small>' + L.into + '/' + L.need + ' XP</small>';
+  return '<div class="lvl"><b><span class="lvbadge"></span>Nivel ' + L.level + '</b>' + bar + '</div>';
+}
+function renderHome() {
+  setColor(build.robot); try { renderArena(); if (col.tipAr) { col.tipAr = 0; saveCol(); setTimeout(() => { if (curView === 'home') runTut(TUT_ARENANEW, 'arenanew'); }, 600); } } catch (e) {}
+  $('#homeYou').innerHTML = robotSVG(build.robot);
+  $('#homeFoe').innerHTML = robotSVG('granito');
+  const r = ROBOTS[build.robot];
+  const cards = build.cards.slice().sort(byOrder).map(id => '<span class="chip">' + CARDS[id].name + '</span>').join('');
+  const pass = build.passives.map(id => '<span class="chip">' + PASSIVES[id].short + '</span>').join('');
+  $('#buildCard').innerHTML =
+    '<div class="row"><span class="ttl">' + avatarHTML(22) + ' ' + pname.replace(/[<>&]/g, '') + ' · tu equipo</span><span class="edit">Editar</span></div>' +
+    '<div class="rn">' + r.name + '<small>' + r.short + '</small></div>' + lvlHTML() +
+    '<div class="chips">' + cards + '</div><div class="chips">' + pass + '</div>';
+  renderDiff();
+  renderRec();
+}
+
+// ===== garaje =====
+var gTab = 'cards', gOwn = false;
+let draft = null, focusCard = null, garageNote = '';
+function openGarage() { draft = clone(build); focusCard = null; garageNote = ''; show('garage'); runTut(TUT_GARAGE, 'garage').then(() => runTut(TUT_MODS, 'mods')); }
+function commitDraft() {
+  if (validBuild(draft)) return;
+  build = clone(draft); build.cards.sort(byOrder); saveBuild();
+}
+function renderGarage() {
+  if (!draft) draft = clone(build);
+  setColor(draft.robot);
+  $('#gRobots').innerHTML = ROBOT_IDS.map(id => {
+    const r = ROBOTS[id], on = draft.robot === id;
+    return '<button class="pk' + (on ? ' on' : '') + '" data-robot="' + id + '" aria-pressed="' + on + '">' + infoTile('robot', id) + '<span class="hxp"><span class="mini" style="--c:' + r.color + '">' + robotSVG(id) + '</span></span><small>' + r.name + '</small></button>';
+  }).join('');
+  { const r = ROBOTS[draft.robot];
+    $('#gRobotInfo').innerHTML = '<div class="rbn"><b>' + r.name + '</b><small>' + r.short + '</small></div><div class="lbl"><span>Vida</span><b>' + r.hp + '</b></div><div class="hbar"><i style="width:' + Math.round(r.hp / 1.2) + '%"></i></div><div class="lbl"><span>Energía inicial</span><b>' + r.en + ' / ' + CFG.maxEnergy + '</b></div><div class="eslots">' + Array.from({ length: CFG.maxEnergy }, (_, i) => '<u class="' + (i < r.en ? 'f' : '') + '">' + (i + 1) + '</u>').join('') + '</div>'; }
+  $('#gHand').innerHTML = Array.from({ length: CFG.handSize }, (_, i) => { const id = draft.cards[i]; if (!id) return '<div class="hs empty"><span>Libre</span></div>'; const c = CARDS[id];
+    return '<button class="hs r-' + c.r + '" data-card="' + id + '" aria-label="Quitar ' + c.name + '"><span class="cost">' + c.cost + '</span>' + cardFace(c) + '</button>'; }).join('');
+  const FT = [['', 'Todas'], ['attack', 'Ataque'], ['guard', 'Defensa'], ['dodge', 'Desvío'], ['skill', 'Habilidad']], FR = [['', 'Todas'], ['g', 'Gris'], ['b', 'Azul'], ['r', 'Rojo']];
+  window.gF = window.gF || { t: '', r: '' };
+  $('#gFil').innerHTML = [[FT, 't'], [FR, 'r']].map(([L, k]) => '<div class="frow">' + L.map(([v, n]) => '<button class="chip' + (gF[k] === v ? ' on' : '') + '" data-k="' + k + '" data-v="' + v + '">' + n + '</button>').join('') + '</div>').join('');
+  $('#gCards').innerHTML = CARD_IDS.filter(id => (!gOwn || cardLevel(id) <= levelOf(xp).level) && (!gF.t || CARDS[id].type === gF.t) && (!gF.r || CARDS[id].r === gF.r)).map(id => {
+    const c = CARDS[id], lock = cardLevel(id) > levelOf(xp).level, on = !lock && draft.cards.includes(id), full = !lock && !on && draft.cards.length >= CFG.handSize;
+    return '<button class="ctile r-' + c.r + (on ? ' on' : '') + (full ? ' full' : '') + (lock ? ' locked' : '') + '" data-card="' + id + '" aria-pressed="' + on + '" aria-label="' + c.name + ', ' + TYPE_NAME[c.type] + '">' +
+      '<span class="cost">' + c.cost + '</span>' + infoTile('card', id) + cardFace(c) + '<em>' + (lock ? 'Nivel ' + cardLevel(id) : statOf(c)) + '</em></button>';
+  }).join('');
+  $('#gPass').innerHTML = passivesOf(draft.robot).map(id => {
+    const p = PASSIVES[id], on = draft.passives.includes(id);
+    return '<button class="ptile' + (on ? ' on' : '') + '" data-pass="' + id + '" aria-pressed="' + on + '">' + infoTile('pass', id) + '<b>' + p.name + '</b><small>' + p.text + '</small></button>';
+  }).join('');
+  { const lv = levelOf(xp).level, slots = lv >= 20 ? 2 : 1, ms = draft.mods || [], ow = col.mod || {}, sp = ms.find(i => MODS[i].part === 'spec'), un = ms.filter(i => MODS[i].part !== 'spec'), PN = { head: 'Cabeza', body: 'Cuerpo', legs: 'Piernas', spec: 'Especial' };
+    const slot = (id, lab, lock) => '<div class="mslot' + (id ? ' f' : '') + (lock ? ' lk' : '') + '"><small>' + lab + '</small><b>' + (lock ? 'Nivel 20' : id ? MODS[id].name : 'Libre') + '</b></div>';
+    $('#gModSlots').innerHTML = slot(sp, 'Especial') + slot(un[0], 'Universal 1') + slot(un[1], 'Universal 2', slots < 2);
+    $('#gMods').innerHTML = MOD_IDS.filter(id => (!MODS[id].robot || MODS[id].robot === draft.robot) && (!gOwn || ow[id])).map(id => {
+      const m = MODS[id], have = !!ow[id], on = ms.includes(id);
+      return '<button class="ptile mt r-' + m.r + (on ? ' on' : '') + (have ? '' : ' lock') + '" data-mod="' + id + '" aria-pressed="' + on + '"><b>' + m.name + '</b><em>' + PN[m.part] + '</em><small>+ ' + m.pro + '</small><small class="con">− ' + m.con + '</small>' + (have ? '' : '<span class="lkt">Ruleta</span>') + '</button>';
+    }).join('');
+    $('#mCount').textContent = ms.length + '/' + (1 + slots); }
+  {
+    const T = [['cards', 'Cartas'], ['mods', 'Módulos'], ['pass', 'Pasivas']];
+    $('#gTabs').innerHTML = T.map(([k, n]) => '<button class="chip' + (gTab === k ? ' on' : '') + '" data-gt="' + k + '">' + n + '</button>').join('') + (gTab === 'pass' ? '' : '<button class="swt' + (gOwn ? ' on' : '') + '" data-own="1" role="switch" aria-checked="' + gOwn + '"><i></i><span>Solo las mías</span></button>');
+    $('#sCards').hidden = gTab !== 'cards'; $('#sMods').hidden = gTab !== 'mods'; $('#sPass').hidden = gTab !== 'pass'; }
+  const fc = focusCard && CARDS[focusCard];
+  $('#gDetail').innerHTML = fc
+    ? '<b>' + fc.name + '</b> · ' + TYPE_NAME[fc.type] + ' · cuesta ' + fc.cost + '<br>' + fc.text
+    : 'Nivel ' + levelOf(xp).level + ': tienes ' + unlockedIds(levelOf(xp).level).length + ' de ' + CARD_IDS.length + ' cartas. Toca una para elegirla; la "i" explica sus ventajas y desventajas.';
+  const cc = $('#hCount'), pc = $('#pCount'); $('#cCount').textContent = unlockedIds(levelOf(xp).level).length + '/' + CARD_IDS.length;
+  cc.textContent = draft.cards.length + '/' + CFG.handSize; cc.classList.toggle('ok', draft.cards.length === CFG.handSize);
+  pc.textContent = draft.passives.length + '/' + CFG.passiveSlots; pc.classList.toggle('ok', draft.passives.length === CFG.passiveSlots);
+  const err = validBuild(draft);
+  const st = $('#gStatus');
+  st.textContent = garageNote || err || 'Equipo listo. Se guarda solo.';
+  st.classList.toggle('ok', !err && !garageNote);
+  $('#gPlay').disabled = !!err;
+}
