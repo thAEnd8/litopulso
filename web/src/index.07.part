@@ -1,0 +1,388 @@
+function garageChanged() { garageNote = ''; commitDraft(); renderGarage(); }
+$('#gRobots').addEventListener('click', e => {
+  if (infoClick(e)) return;
+  const t = e.target.closest('[data-robot]'); if (!t) return;
+  draft.robot = t.dataset.robot; AU.tap();
+  draft.passives = draft.passives.filter(id => PASSIVES[id].robot === draft.robot);
+  draft.mods = (draft.mods || []).filter(id => !MODS[id].robot || MODS[id].robot === draft.robot);
+  for (const id of passivesOf(draft.robot)) if (draft.passives.length < CFG.passiveSlots && !draft.passives.includes(id)) draft.passives.push(id);
+  garageChanged();
+});
+$('#gTabs').addEventListener('click', e => { const t = e.target.closest('.chip,.swt'); if (!t) return; AU.tap(); if (t.dataset.gt) gTab = t.dataset.gt; else gOwn = !gOwn; renderGarage(); });
+$('#gFil').addEventListener('click', e => { const t = e.target.closest('.chip'); if (!t) return; gF[t.dataset.k] = t.dataset.v; renderGarage(); });
+const onCardTap = e => {
+  if (infoClick(e)) return;
+  const t = e.target.closest('[data-card]'); if (!t) return;
+  const id = t.dataset.card, i = draft.cards.indexOf(id);
+  focusCard = id; AU.tap();
+  if (cardLevel(id) > levelOf(xp).level) { garageNote = id && CARDS[id].name + ' se desbloquea en el nivel ' + cardLevel(id) + '. Sube de nivel jugando duelos.'; renderGarage(); return; }
+  if (i >= 0) draft.cards.splice(i, 1);
+  else if (draft.cards.length >= CFG.handSize) { garageNote = 'Ya tienes ' + CFG.handSize + ' cartas: quita una primero.'; renderGarage(); return; }
+  else draft.cards.push(id);
+  garageChanged();
+};
+$('#gCards').addEventListener('click', onCardTap); $('#gHand').addEventListener('click', onCardTap);
+$('#gMods').addEventListener('click', e => {
+  const t = e.target.closest('[data-mod]'); if (!t) return;
+  const id = t.dataset.mod, m = MODS[id], ms = draft.mods = draft.mods || [], i = ms.indexOf(id), slots = levelOf(xp).level >= 20 ? 2 : 1;
+  AU.tap();
+  if (!(col.mod || {})[id]) { garageNote = m.name + ' no la tienes aún: sale en la ruleta (premio Pieza).'; renderGarage(); return; }
+  if (i >= 0) ms.splice(i, 1);
+  else {
+    if (m.part === 'spec') { const o = ms.findIndex(x => MODS[x].part === 'spec'); if (o >= 0) ms.splice(o, 1); }
+    else { const o = ms.findIndex(x => MODS[x].part === m.part); if (o >= 0) ms.splice(o, 1); const u = ms.filter(x => MODS[x].part !== 'spec'); if (u.length >= slots) ms.splice(ms.indexOf(u[0]), 1); }
+    ms.push(id);
+  }
+  garageChanged();
+});
+$('#gPass').addEventListener('click', e => {
+  if (infoClick(e)) return;
+  const t = e.target.closest('[data-pass]'); if (!t) return;
+  const id = t.dataset.pass, i = draft.passives.indexOf(id);
+  AU.tap();
+  if (i >= 0) draft.passives.splice(i, 1);
+  else if (draft.passives.length >= CFG.passiveSlots) { garageNote = 'Ya tienes ' + CFG.passiveSlots + ' pasivas: quita una primero.'; renderGarage(); return; }
+  else draft.passives.push(id);
+  garageChanged();
+});
+$('#gRandom').addEventListener('click', () => { draft = randomBuild(); focusCard = null; AU.tap(); garageChanged(); });
+$('#gBack').addEventListener('click', () => { draft = null; show('home'); });
+$('#gPlay').addEventListener('click', () => { if (!validBuild(draft)) { commitDraft(); startDuel(); } });
+
+// ===== duelo =====
+let G = null, foeBuild = null, busy = false;
+const ACT = { attack: 'atk', skill: 'skl', over: 'skl', guard: 'grd', dodge: 'ddg' };
+
+function fighterStats(side, f, tag) {
+  return '<div class="stats"><div class="who"><span class="tag">' + tag + '</span><span class="nm">' + ROBOTS[f.robot].name + '</span></div>' +
+    '<div class="hprow"><span class="lbl">Vida</span><div class="bar" id="' + side + '-bar"><b id="' + side + '-hpt"></b><i id="' + side + '-hp"></i></div><span class="num" id="' + side + '-hpn"></span></div>' +
+    '<div class="enrow"><span class="lbl">Energía</span><div class="pips" id="' + side + '-pips">' + '<span></span>'.repeat(CFG.maxEnergy) + '</div><span class="num sm" id="' + side + '-en"></span></div>' +
+    '<div class="enrow"><span class="lbl">Racha</span><div class="pips sc" id="' + side + '-sc">' + '<span></span>'.repeat(CFG.scMax) + '</div><span class="num sm" id="' + side + '-scn"></span></div><div class="mods" id="' + side + '-mods"></div></div>';
+}
+function fighterRob(side, f) {
+  return '<div class="rob" id="' + side + '-rob">' + robotSVG(f.robot) + '<div class="shield"></div><div class="burst"></div></div>';
+}
+
+var handSig = '';
+function drawMods() {
+  for (const sd of ['you', 'foe']) { const el = $('#' + sd + '-mods'); if (el) el.innerHTML = (G[sd].mods || []).filter(i => MODS[i]).map(id => '<i class="' + (modWhy(G, sd, id) === 'Ya usada' ? 'used' : '') + '" title="' + MODS[id].name + '">' + MGLY[MODS[id].part] + '</i>').join(''); }
+  const ms = (G.you.mods || []).filter(i => MODS[i]);
+  $('#modRow').hidden = !ms.length;
+  $('#modRow').innerHTML = ms.map(id => { const why = modWhy(G, 'you', id); return '<button class="modb' + (why ? ' off' : '') + '" data-md="' + id + '" ' + (why && why !== 'Poca vida' && why !== 'Poca energía' ? 'disabled' : '') + '><b>' + MODS[id].name + '</b><small>' + (why === 'Ya usada' ? 'Usada' : MODS[id].pro) + '</small></button>'; }).join('');
+}
+$('#modRow').addEventListener('click', e => {
+  const t = e.target.closest('[data-md]'); if (!t || busy || !G || G.over) return;
+  const id = t.dataset.md, why = modWhy(G, 'you', id);
+  if (why) { $('#msg').textContent = MODS[id].name + ': ' + why.toLowerCase() + '.'; return; }
+  AU.init(); AU.pick();
+  useMod(G, 'you', id);
+  (G.log = G.log || []).push({ t: G.turn, y: '🔧 ' + MODS[id].name, f: '—', dy: 0, df: 0, ev: '' });
+  let m = MODS[id].name + ' activada.';
+  if (id === 'm_visor') { G.foePre = botPick(G.foe, G.hist, Math.random, diff, G.you); m = 'Visor: el rival jugará ' + G.foePre.name + '.'; }
+  $('#msg').textContent = m;
+  render();
+});
+function drawHand() {
+  handSig = G.you.hand.map(c => c.id).join();
+  $('#hand').innerHTML = G.you.hand.map((c, i) =>
+    '<button class="card r-' + (c.r || 'g') + '" data-i="' + i + '" style="--i:' + i + '" aria-label="' + c.name + ', ' + TYPE_NAME[c.type] + ', cuesta ' + c.cost + '"><span class="cost">' + c.cost + '</span>' + cardFace(c) + '<small>' + statOf(c) + '</small></button>').join('');
+}
+function render() {
+  if (G.you.hand.map(c => c.id).join() !== handSig) drawHand();
+  drawMods();
+  for (const s of ['you', 'foe']) {
+    const f = G[s], pct = (f.hp / f.maxHp * 100) + '%';
+    $('#' + s + '-hp').style.width = pct;
+    $('#' + s + '-hpt').style.width = pct;
+    $('#' + s + '-bar').classList.toggle('low', f.hp <= f.maxHp * 0.3);
+    { const hn = $('#' + s + '-hpn'), was = +hn.textContent; if (hn.textContent !== '' && was !== f.hp) countTo(hn, was, f.hp); else hn.textContent = f.hp; }
+    { const pe = $('#' + s + '-pips'), wasEn = +(pe.dataset.n || 0); pe.dataset.n = f.en; pe.childNodes.forEach((p, i) => { p.classList.toggle('on', i < f.en); if (i >= wasEn && i < f.en && wasEn) { p.classList.remove('gain'); void p.offsetWidth; p.classList.add('gain'); } }); }
+    { const rb = $('#' + s + '-rob'); if (rb) { rb.style.setProperty('--glow', (f.en / CFG.maxEnergy).toFixed(2)); rb.classList.toggle('charged', f.sc >= overNeed(f) && !G.over); } }
+    $('#' + s + '-en').textContent = f.en + '/' + CFG.maxEnergy;
+    const sc = $('#' + s + '-sc'), prev = +sc.dataset.n || 0;
+    sc.dataset.n = f.sc;
+    sc.childNodes.forEach((p, i) => p.classList.toggle('on', i < f.sc));
+    sc.classList.toggle('full', f.sc >= CFG.scMax);
+    if (f.sc > prev) { const p = sc.childNodes[f.sc - 1]; p.classList.add('pop'); setTimeout(() => p.classList.remove('pop'), 480); }
+    $('#' + s + '-scn').textContent = f.sc + '/' + CFG.scMax;
+  }
+  $('#turn').textContent = 'Turno ' + G.turn + ' de ' + CFG.maxTurns;
+  document.body.classList.toggle('lowhp', curView === 'duel' && !G.over && G.you.hp > 0 && G.you.hp <= G.you.maxHp * 0.3);
+  $$('.card').forEach((c, i) => c.classList.toggle('poor', G.you.hand[i].cost > G.you.en || dLock(G.you, G.you.hand[i]) || (G.you.locked || []).includes(G.you.hand[i].id)));
+  { const eb = $('#evBox'), up = !G.ev && G.evNext, id = G.ev ? G.ev.id : (up ? G.evNext : null);
+    if (!id) { eb.hidden = true; $('#evMini').hidden = true; G.evAnn = null; }
+    else {
+      eb.hidden = false; eb.className = 'evbox evicon' + (up ? ' soon' : ''); eb.setAttribute('aria-label', EVENTS[id].name);
+      eb.innerHTML = EVSVG + '<b>' + (up ? '!' : G.ev.left) + '</b>';
+      if (G.evAnn !== id) { G.evAnn = id; showEvPop(id, up); }
+      if (G.evNew) { eb.classList.add('pop'); G.evNew = null; }
+    } }
+  if ((G.you.lockDodge || 0) > 0) $('#msg').textContent = '¡Grito! No puedes usar Desvío este turno.';
+  const ob = $('#overBtn'), ready = G.you.sc >= overNeed(G.you);
+  ob.disabled = !ready;
+  ob.classList.toggle('ready', ready);
+  ob.textContent = ready ? 'Sobrecarga lista: usar (−' + CFG.overDmg + ')' : 'Sobrecarga: ' + G.you.sc + '/' + overNeed(G.you) + ' de racha';
+}
+function countTo(el, from, to) {
+  clearInterval(el._ct); if (RM) { el.textContent = to; return; }
+  const t0 = performance.now(), d = 420;
+  el.classList.remove('tick'); void el.offsetWidth; if (to < from) el.classList.add('tick');
+  el._ct = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / d); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k >= 1) clearInterval(el._ct); }, 30);
+}
+function setSlot(el, cls, html) { el.className = 'pcard ' + cls; el.innerHTML = html; }
+const face = c => icon(c.type) + '<b>' + c.name + '</b>';
+function flash(side, cls, ms) { const el = $('#' + side + '-rob'); el.classList.add(cls); setTimeout(() => el.classList.remove(cls), ms); }
+function fx(side, kind) { const p = $('#' + side + '-rob'); if (!p) return; const el = document.createElement('span'); el.className = 'fx ' + kind; p.appendChild(el); setTimeout(() => el.remove(), 900); }
+function clash(kind) { const p = $('#slotYou') && $('#slotYou').parentNode.parentNode; if (!p) return; p.style.position = 'relative'; const el = document.createElement('span'); el.className = 'clash ' + kind; p.appendChild(el); setTimeout(() => el.remove(), 800); }
+function floatTxt(side, txt, cls, size, delay) {
+  const go = () => {
+    const el = document.createElement('span');
+    el.className = 'float ' + cls; el.textContent = txt;
+    if (size) el.style.fontSize = (18 + size * 0.55) + 'px';
+    $('#' + side + '-rob').appendChild(el);
+    setTimeout(() => el.remove(), 1100);
+  };
+  if (delay) setTimeout(go, delay); else go();
+}
+function sparks(side, n) {
+  const rob = $('#' + side + '-rob');
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('i'); s.className = 'spark';
+    const a = Math.random() * Math.PI * 2, d = 26 + Math.random() * 36;
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+    rob.appendChild(s); setTimeout(() => s.remove(), 650);
+  }
+}
+function shards(side, n) {
+  const rob = $('#' + side + '-rob'); if (!rob || RM) return;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('i'); s.className = 'shard' + (i % 4 === 0 ? ' lit' : '');
+    const a = -Math.PI * (0.1 + Math.random() * 0.8), d = 30 + Math.random() * 46;
+    s.style.setProperty('--dx', (Math.cos(a) * d * (Math.random() < .5 ? -1 : 1)).toFixed(0) + 'px');
+    s.style.setProperty('--dy', (Math.sin(a) * d).toFixed(0) + 'px');
+    s.style.setProperty('--rot', (Math.random() * 540 - 270).toFixed(0) + 'deg');
+    const k = 5 + Math.random() * 6; s.style.width = k + 'px'; s.style.height = (k * .8) + 'px';
+    rob.appendChild(s); setTimeout(() => s.remove(), 800);
+  }
+}
+function shake(cls) {
+  const a = $('#app');
+  a.classList.remove('shake', 'shake2'); void a.offsetWidth; a.classList.add(cls);
+  setTimeout(() => a.classList.remove(cls), 520);
+}
+function screenFlash(side) { const f = $('#flash'); f.className = 'flash ' + side; void f.offsetWidth; f.classList.add('go'); }
+function showKO() { const k = $('#ko'); k.hidden = false; k.classList.remove('go'); void k.offsetWidth; k.classList.add('go'); setTimeout(() => { k.hidden = true; }, 1700); }
+
+let halfShown = { you: false, foe: false }, halfNote = { you: false, foe: false };
+function halfWarn(side) {
+  const box = $('#turn').getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'halfban';
+  el.textContent = side === 'you' ? '¡Mitad de vida!' : 'Rival a la mitad';
+  el.style.top = Math.max(8, box.top - 6) + 'px';
+  document.body.appendChild(el);
+  const rob = $('#' + side + '-rob'), bar = $('#' + side + '-bar');
+  rob.classList.add('half'); bar.classList.add('halfpulse');
+  AU.half(); buzz([60, 50, 60]);
+  setTimeout(() => { el.remove(); rob.classList.remove('half'); bar.classList.remove('halfpulse'); }, 1700);
+}
+function strikeText(att, def, d, mine) {
+  const who = mine ? 'Tu' : 'Su';
+  if (att.type === 'guard') return who + ' ' + att.name + ' frena el golpe y lo devuelve: ' + (mine ? 'el rival recibe ' : 'recibes ') + d + '.';
+  let how = mine ? 'alcanza al rival' : 'te alcanza';
+  if (def.type === 'dodge') how += def.half ? ' (la Sombra reduce el golpe a la mitad)' : ' en pleno desvío';
+  if (def.type === 'guard') how = 'rompe ' + (mine ? 'su' : 'tu') + ' Defensa';
+  return who + ' ' + att.name + ' ' + how + ': ' + (mine ? '−' : 'recibes ') + d + '.';
+}
+function outcomeText(pc, bc, r) {
+  const a = r.toFoe, b = r.toYou;
+  if (a > 0 && b > 0) return 'Se cruzan: el rival recibe ' + a + ' y tú ' + b + '.';
+  if (a > 0) return strikeText(pc, bc, a, true);
+  if (b > 0) return strikeText(bc, pc, b, false);
+  if (r.tagYou === 'blocked' || r.tagFoe === 'blocked') return 'Se frena el golpe: no pasa daño.';
+  if (pc.type === 'over' && bc.type === 'dodge') return 'El rival desvía tu Sobrecarga: se pierde la carga.';
+  if (bc.type === 'over' && pc.type === 'dodge') return 'Desvíos su Sobrecarga: no pasa daño.';
+  if (r.tagYou === 'dodged' || r.tagFoe === 'dodged') return 'Desvío exitosa: no pasa daño.';
+  return 'Nadie golpea: no pasa nada.';
+}
+
+function startTurn() {
+  setSlot($('#slotFoe'), 'back', '?');
+  setSlot($('#slotYou'), 'empty', 'Elige');
+  $('#msg').textContent = G.turn === 1 ? 'Elige tu primer movimiento.' : '';
+  $('#controls').classList.remove('locked');
+  $$('.card, #overBtn').forEach(c => c.classList.remove('sel'));
+  $('#app').classList.remove('dim');
+  busy = false;
+  render();
+  if (PVP.on) pvpClockStart();
+}
+async function wait(ms, tok) { await sleep(ms); return tok === duelToken; }
+
+async function play(card) {
+  if (busy || !G || G.over || !can(G.you, card)) return;
+  busy = true;
+  const tok = duelToken;
+  AU.init();
+  $('#controls').classList.add('locked');
+  (card.type === 'over' ? $('#overBtn') : $$('.card')[G.you.hand.indexOf(card)]).classList.add('sel');
+  AU.pick();
+  const bu = isBoss && !PVP.on ? bossUse(G) : [];
+  if (bu.length) { $('#msg').textContent = '¡El jefe usó ' + bu.map(i => MODS[i].name).join(' y ') + '!'; bu.forEach(i => (G.log = G.log || []).push({ t: G.turn, y: '—', f: '🔧 ' + MODS[i].name, dy: 0, df: 0, ev: '' })); render(); }
+  let bc;
+  if (PVP.on) { bc = await pvpExchange(card); if (!bc || tok !== duelToken) return; }
+  else { bc = G.foePre || botPick(G.foe, G.hist, Math.random, diff, G.you); G.foePre = null; }
+  const tn = G.turn, r = applyTurn(G, card, bc);
+  (G.log = G.log || []).push({ t: tn, y: card.name, f: bc.name, dy: r.toFoe, df: r.toYou, ev: G.ev && G.ev.id !== G.evNew ? EVENTS[G.ev.id].name : '' });
+  const fatal = G.you.hp <= 0 || G.foe.hp <= 0;
+  const dmg = Math.max(r.toYou, r.toFoe);
+  $('#msg').textContent = '';
+  if (!(await wait(350, tok))) return;
+  setSlot($('#slotYou'), 'face', face(card));
+  setSlot($('#slotFoe'), 'face', face(bc));
+  AU.reveal();
+  if (!(await wait(550, tok))) return;
+  flash('you', ACT[card.type], 650); flash('foe', ACT[bc.type], 650);
+  clash(r.toYou > 0 || r.toFoe > 0 ? 'hit' : (r.tagYou === 'blocked' || r.tagFoe === 'blocked') ? 'block' : (r.tagYou === 'dodged' || r.tagFoe === 'dodged') ? 'dodge' : 'none');
+  if (card.type === 'over' || bc.type === 'over') AU.over();
+  else if (card.type === 'skill' || bc.type === 'skill') AU.skill();
+  else if (card.type === 'attack' || bc.type === 'attack') AU.swing();
+  if (!(await wait(480, tok))) return;
+  if (fatal) { $('#app').classList.add('dim'); if (!(await wait(750, tok))) return; }
+  else if (dmg >= 35) { if (!(await wait(140, tok))) return; }
+  if (r.toYou > 0 || r.toFoe > 0) {
+    AU.hit(dmg); shake(dmg >= 35 ? 'shake2' : 'shake'); buzz(dmg >= 35 ? [40, 30, 60] : 30);
+  } else if (r.tagYou === 'blocked' || r.tagFoe === 'blocked') AU.block();
+  else if (r.tagYou === 'dodged' || r.tagFoe === 'dodged') AU.dodge();
+  if (card.type === 'over' && r.toFoe > 0) screenFlash('you');
+  else if (bc.type === 'over' && r.toYou > 0) screenFlash('foe');
+  if (r.toYou > 0) { flash('you', 'hit', 450); fx('you', bc.type === 'attack' ? 'slash' : 'wave'); floatTxt('you', '−' + r.toYou, 'dmg', r.toYou); sparks('you', 6 + Math.round(r.toYou / 6)); shards('you', 3 + Math.round(r.toYou / 8)); if (r.toYou >= 30) fx('you', 'ring'); }
+  if (r.toFoe > 0) { flash('foe', 'hit', 450); fx('foe', card.type === 'attack' ? 'slash' : 'wave'); floatTxt('foe', '−' + r.toFoe, 'dmg', r.toFoe); sparks('foe', 6 + Math.round(r.toFoe / 6)); shards('foe', 3 + Math.round(r.toFoe / 8)); if (r.toFoe >= 30) fx('foe', 'ring'); }
+  if (r.tagYou === 'blocked') fx('you', 'hex'); if (r.tagFoe === 'blocked') fx('foe', 'hex'); if (r.tagYou === 'dodged') fx('you', 'ghost'); if (r.tagFoe === 'dodged') fx('foe', 'ghost');
+  if (r.bonusYou) floatTxt('you', '+' + r.bonusYou + ' energía', 'nrg');
+  if (r.bonusFoe) floatTxt('foe', '+' + r.bonusFoe + ' energía', 'nrg');
+  if (r.fullYou) { floatTxt('you', '¡Sobrecarga lista!', 'nrg', 0, r.bonusYou ? 380 : 0); setTimeout(() => AU.ready(), 350); }
+  else if (r.scYou === 1) { floatTxt('you', 'Racha ' + G.you.sc + '/' + CFG.scMax, 'nrg', 0, r.bonusYou ? 380 : 0); AU.gain(); }
+  else if (r.lostYou) floatTxt('you', 'Racha perdida', 'lost', 0, r.bonusYou ? 380 : 0);
+  if (r.fullFoe) floatTxt('foe', '¡Sobrecarga lista!', 'nrg', 0, r.bonusFoe ? 380 : 0);
+  else if (r.scFoe === 1) floatTxt('foe', 'Racha ' + G.foe.sc + '/' + CFG.scMax, 'nrg', 0, r.bonusFoe ? 380 : 0);
+  else if (r.lostFoe) floatTxt('foe', 'Racha perdida', 'lost', 0, r.bonusFoe ? 380 : 0);
+  if (fatal) {
+    if (G.you.hp <= 0) $('#you-rob').classList.add('ko');
+    if (G.foe.hp <= 0) $('#foe-rob').classList.add('ko');
+    AU.ko(); showKO(); buzz([80, 40, 120]);
+  }
+  render();
+  for (const s of ['you', 'foe']) {
+    const f = G[s];
+    if (!halfShown[s] && f.hp > 0 && f.hp <= f.maxHp / 2) { halfShown[s] = true; setTimeout(() => { if (tok === duelToken) halfWarn(s); }, 500); }
+  }
+  let t = outcomeText(card, bc, r);
+  if (r.bonusYou) t += ' Recuperas ' + r.bonusYou + ' de energía extra.';
+  if (r.bonusFoe) t += ' El rival recupera ' + r.bonusFoe + ' de energía extra.';
+  if (r.fullYou) t += ' ¡Tu Sobrecarga está lista!';
+  else if (r.lostYou) t += ' Pierdes tu racha.';
+  if (r.fullFoe) t += ' ¡El rival tiene la Sobrecarga lista!';
+  if (halfShown.you && !halfNote.you && G.you.hp > 0 && G.you.hp <= G.you.maxHp / 2) { halfNote.you = true; t += ' Tu robot está a la mitad de vida.'; }
+  if (halfShown.foe && !halfNote.foe && G.foe.hp > 0 && G.foe.hp <= G.foe.maxHp / 2) { halfNote.foe = true; t += ' El rival está a la mitad de vida.'; }
+  $('#msg').textContent = t;
+  if (!(await wait(fatal ? 2300 : 1500, tok))) return;
+  if (G.over) return showEnd();
+  startTurn();
+}
+
+function endBadge(res) {
+  const ic = { win: '<path d="M0 -13 L4 -4 L13 -3 L6 4 L8 13 L0 8 L-8 13 L-6 4 L-13 -3 L-4 -4Z"/>', lose: '<path d="M-9 -9 L9 9 M9 -9 L-9 9" stroke-width="5" stroke-linecap="round" fill="none"/>', draw: '<path d="M-10 -5 H10 M-10 5 H10" stroke-width="5" stroke-linecap="round" fill="none"/>' };
+  $('#endB').className = 'endbadge ' + res; $('#endB').innerHTML = '<svg viewBox="-30 -34 60 68"><polygon points="0,-32 28,-16 28,16 0,32 -28,16 -28,-16"/><g>' + ic[res] + '</g></svg>' + (res === 'win' ? [...Array(14)].map((_, i) => '<i style="--a:' + (i * 25.7).toFixed(0) + 'deg;--d:' + (60 + (i % 3) * 22) + 'px"></i>').join('') : '');
+}
+function showEnd() {
+  if (PVP.on) return pvpShowEnd();
+  $('.xpbox .xpbar').hidden = false; $('#endGarage').hidden = false; $('#again').disabled = false; $('#again').textContent = 'Revancha'; $('#endHome').textContent = 'Inicio';
+  const T = { win: 'Victoria', lose: 'Derrota', draw: 'Empate' };
+  if (G.result === 'win') { rec.w++; AU.win(); } else if (G.result === 'lose') { rec.l++; AU.lose(); } else rec.d++;
+  recD[diff][G.result === 'win' ? 'w' : G.result === 'draw' ? 'd' : 'l']++; saveRecD();
+  saveRec(); renderRec();
+  const gain = XP_TABLE[diff][G.result];
+  const starsB = starsOf(xp), before = levelOf(xp), pctBefore = before.level >= MAX_LEVEL ? 100 : Math.round(before.into / before.need * 100);
+  xp += gain; saveXp();
+  const after = levelOf(xp);
+  let note = '+' + gain + ' XP', lvlHTML = '';
+  if (after.level > before.level) {
+    const news = CARD_IDS.filter(id => cardLevel(id) > before.level && cardLevel(id) <= after.level).map(id => CARDS[id].name);
+    applyProgress();
+    while (build.cards.length < CFG.handSize) { const nx = CARD_IDS.find(id => cardLevel(id) <= after.level && !build.cards.includes(id)); if (!nx) break; build.cards.push(nx); }
+    build.cards.sort(byOrder); saveBuild();
+    lvlHTML = '<b>¡Nivel ' + after.level + '!</b>' + (news.length ? '<div class="lvc">' + news.map(n => '<span>' + n + '</span>').join('') + '</div><small>Carta' + (news.length > 1 ? 's' : '') + ' nueva' + (news.length > 1 ? 's' : '') + '</small>' : '') + '<small>+1 punto de habilidad para el Mercado · ' + (after.level >= MAX_LEVEL ? 'tu núcleo ahora es plateado' : 'tu núcleo se oscurece un tono') + '</small>';
+    setTimeout(() => AU.ready(), 500);
+  }
+  note += colProgress(diff, G.result, build.robot, G.you.hp);
+  if (starsOf(xp) > starsB) { note += ' · ¡Nueva estrella ★ (' + starsOf(xp) + ')!'; setTimeout(() => AU.ready(), 500); }
+  const fill = $('#xpFill');
+  fill.style.transition = 'none'; fill.style.width = pctBefore + '%';
+  void fill.offsetWidth; fill.style.transition = '';
+  setTimeout(() => { fill.style.width = (after.level >= MAX_LEVEL ? starProg(xp) : Math.round(after.into / after.need * 100)) + '%'; }, 60);
+  $('#xpText').textContent = 'Nivel ' + after.level + ' · ' + note;
+  const t = $('#endT');
+  t.textContent = T[G.result];
+  t.className = 'end-title ' + G.result;
+  $('#endS').innerHTML = '<div><b>' + G.turn + '</b><small>' + (G.turn === 1 ? 'turno' : 'turnos') + '</small></div><div><b>' + G.dealt + '</b><small>daño hecho</small></div><div><b>' + G.taken + '</b><small>daño recibido</small></div>';
+  endBadge(G.result);
+  const up = $('#endUp'); up.hidden = !lvlHTML; up.innerHTML = lvlHTML;
+  $('#end').hidden = false;
+  $('#again').focus();
+}
+
+var isBoss = false, forceBoss = false, arenaK = 1;
+const ARENAS = [
+  { n: 'Llanura de cuarzo', r: 'Sin regla especial.' },
+  { n: 'Cantera hueca', r: 'Todos los golpes hacen +3 de daño.' },
+  { n: 'Reactor frío', r: 'Los dos recuperan +1 de energía por turno.' },
+  { n: 'Geoda eléctrica', r: 'La Sobrecarga se activa con racha 4.' },
+  { n: 'Grieta del Hexx', r: 'Los eventos salen cada 5 turnos (5, 10, 15, 20, 25).' }
+];
+const CHAPS = [
+  { n: 'La grieta del Hexx', b: 'El guardián de la grieta' },
+  { n: 'La cantera olvidada', b: 'El Coloso de roca' },
+  { n: 'Pulseras vacías', b: 'La Custodia fría' },
+  { n: 'El reactor dormido', b: 'El Núcleo furioso' },
+  { n: 'El corazón del Hexx', b: 'El Origen' }
+];
+const chapNow = () => Math.min(col.bs | 0, 4) + 1;
+let selArena = 1; try { selArena = +localStorage.getItem('duelo-arena') || 1; } catch (e) {}
+const arenaOpen = k => k === 1 || (col.bs | 0) >= k - 1;
+function applyArena(g, k) {
+  [g.you, g.foe].forEach(f => {
+    if (k === 2) f.edge = (f.edge || 0) + 3;
+    else if (k === 3) f.regen += 1;
+    else if (k === 4) { f.scNeed = 4; f.arNeed = 4; }
+  });
+  if (k === 5) g.evAt = [5, 10, 15, 20, 25];
+}
+function renderArena() {
+  if (!arenaOpen(selArena)) selArena = 1;
+  $('#arenaRow').innerHTML = ARENAS.map((a, i) => { const k = i + 1, ok = arenaOpen(k); return '<button role="radio" aria-checked="' + (k === selArena) + '" class="' + (k === selArena ? 'on' : '') + (ok ? '' : ' lk') + '" data-ar="' + k + '" aria-label="' + a.n + (ok ? '' : ' (bloqueada)') + '">' + (ok ? k : '🔒') + '</button>'; }).join('');
+  const A = ARENAS[selArena - 1];
+  $('#arenaText').textContent = 'Arena ' + selArena + ': ' + A.n + '. ' + A.r;
+}
+$('#arenaRow').addEventListener('click', e => {
+  const t = e.target.closest('[data-ar]'); if (!t) return; const k = +t.dataset.ar;
+  AU.tap();
+  if (!arenaOpen(k)) { $('#arenaText').textContent = 'Se desbloquea al vencer al jefe del Capítulo ' + (k - 1) + ' en Historia.'; return; }
+  selArena = k; try { localStorage.setItem('duelo-arena', k); } catch (e) {} renderArena();
+});
+function renderHis() {
+  const s = Math.min(5, col.st | 0), bs = col.bs | 0, cur = chapNow();
+  $('#hisList').innerHTML = CHAPS.map((c, i) => {
+    const k = i + 1, done = bs >= k && !(k === 5 && bs >= 5 && false), now = k === cur && !(bs >= 5 && k === 5 && false), lock = k > cur;
+    const state = k < cur || (k === 5 && bs >= 5) ? 'ok' : now ? 'now' : 'lock';
+    let h = '<div class="chap' + (state === 'lock' ? ' lock' : '') + '"><b>Capítulo ' + k + ' · ' + c.n + (state === 'ok' ? ' ✓' : '') + '</b>';
+    if (state === 'lock') h += '<small>Se desbloquea al vencer al jefe del Capítulo ' + (k - 1) + '. Trae la arena ' + k + ': ' + ARENAS[k - 1].n + '.</small>';
+    else if (state === 'ok' && !(k === cur)) h += '<small>' + c.b + ' vencido. Arena ' + k + ' desbloqueada.</small>';
+    else {
+      h += '<small>' + (s >= 5 ? c.b + ' te espera en la arena ' + k + '.' : 'Gana ' + (5 - s) + ' combate' + (5 - s === 1 ? '' : 's') + ' más (normal o difícil) para llegar a ' + c.b.toLowerCase() + '.') + '</small><div class="steps2">' + Array.from({ length: 5 }, (_, j) => '<i class="' + (j < s ? 'f' : '') + '"><u>' + (j + 1) + '</u></i>').join('') + '<span class="bs' + (s >= 5 ? ' f' : '') + '">JEFE</span></div><small>Recompensa: ' + (bs >= 5 ? '20 fragmentos' : 'pieza roja exclusiva' + (k === 5 ? ' y 3 tickets' : '')) + '</small>';
+    }
+    if (k === 1 && bs > 0) h += '<button class="btn ghost" id="storyBtn" style="border-color:var(--you);color:var(--you)">Ver la historia</button>';
+    return h + '</div>';
+  }).join('');
+  $('#bossBtn').disabled = s < 5; $('#bossBtn').textContent = s >= 5 ? 'Combatir a ' + CHAPS[cur - 1].b.toLowerCase() : 'Jefe bloqueado';
+}
