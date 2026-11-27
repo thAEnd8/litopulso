@@ -1,0 +1,46 @@
+@@ 1245 1246 1
+    <p class="hxver"><span class="rec"></span> · v10.2</p>
+@@ 1294 1295 1
+    <p class="ver">Litopulso · v10.2</p>
+@@ 1409 1410 1
+    <p class="sub"><b>Dificultad:</b> Fácil (rival con 25 % menos de vida; ganas cerca de 7 de cada 10), Normal (30 % más de vida y +2 de daño; ganas cerca de 1 de cada 3) y Difícil (45 % más de vida y +3 de daño, aprende cómo juegas; ganas cerca de 1 de cada 5).</p>
+@@ 1743 1745 2
+  easy:   { name: 'Fácil',   text: 'Se equivoca seguido y tiene 25 % menos de vida. Le ganas casi siempre (cerca de 70 %).',
+            over: 0.10, blunder: 0.70, foolish: 0.3, trust: 0,    explore: 0,    adapt: false, smart: false, econ: false, hp: 0.75 },
+@@ 1747 1749 2
+  hard:   { name: 'Difícil', text: 'Aprende cómo juegas, cambia de táctica, lee tus combos, no siempre juega igual, tiene 45 % más de vida y golpea +3. Ganarle es raro (cerca de 20 %).',
+            over: 1.00, blunder: 0,    foolish: 0,   trust: 0.95, explore: 0.06, adapt: true,  smart: true,  econ: true,  hp: 1.45, edge: 3 }
+@@ 1765 1766 2
+  // difícil: casi siempre la más fuerte, pero no siempre (para que no sea predecible)
+  if (smart && rng() < 0.6) return m.slice().sort((a, b) => (b.dmg || 0) - (a.dmg || 0) || a.cost - b.cost)[0];
+@@ 1779 1780 1
+  const ai = bot.ai || (bot.ai = { last: null, score: { last: 0, freq: 0, mk: 0, chain: 0, l2: 0, cmb: 0 }, preds: {}, persona: PERSONAS[Math.floor(rng() * PERSONAS.length)], key: null, keyAge: 0 });
+@@ 1794 1794 2
+    // el jugador cree que el bot le contesta y juega lo que le gana a esa respuesta
+    if (D.adapt && last !== 'over') P.l2 = counterOf(counterOf(last));
+@@ 1795 1795 2
+  // el jugador tiene un combo listo: lo más probable es que lo use
+  if (D.adapt && foe && foe.cmb) P.cmb = foe.cmb === 'fin' ? 'skill' : foe.cmb === 'rec' ? 'guard' : 'attack';
+@@ 1800 1802 4
+      // casi siempre el predictor que mejor le ha funcionado, a veces el segundo (no siempre lee igual)
+      const ks = keys.slice().sort((x, y) => (ai.score[y] || 0) - (ai.score[x] || 0));
+      const k = ks.length > 1 && rng() < 0.25 ? ks[1] : ks[0];
+      pred = P[k]; conf = ai.score[k] || 0;
+@@ 1816 1818 5
+    if (D.adapt) {
+      p = 0.5;
+      if (pred === 'dodge' && conf >= 1.2) p = 0.15;
+      else if (foe && foe.hp <= CFG.overDmg && pred !== 'dodge') p = 0.9;
+    }
+@@ 1826 1828 2
+  // economía (difícil): sin energía a veces se defiende para recuperar, pero no siempre
+  if (D.econ && bot.en <= 1 && rng() < 0.6) {
+@@ 1832 1833 2
+      const l = m.length ? m : def;
+      return done(l[Math.floor(rng() * l.length)]);
+@@ 1834 1834 5
+  }
+  // difícil: si tiene un combo listo, a veces lo usa (si no pierde contra lo que espera de ti)
+  if (D.adapt && bot.cmb && rng() < 0.4) {
+    const t = BASE_TYPES.find(x => comboFor(bot.cmb, x) && (!pred || counterOf(x) !== pred));
+    const c = t && bestCard(opts, t, rng, D.smart); if (c) return done(c);
