@@ -1,0 +1,206 @@
+@@ 2308 2322 8
+  const s = Math.min(5, col.st | 0), bs = col.bs | 0, cur = chapNow(), c = CHAPS[cur - 1], done = bs >= 5;
+  let h = '<div class="chap now"><div class="chh"><b>Capítulo ' + cur + ' · ' + c.n + '</b><small>' + Math.min(bs, 5) + ' de 5 jefes</small></div>';
+  if (done) h += '<small>¡Historia completada! Cada jefe vencido otra vez da 20 fragmentos.</small>';
+  h += '<div class="steps2">' + Array.from({ length: 5 }, (_, j) => '<i class="' + (j < s ? 'f' : '') + '"><u>' + (j + 1) + '</u></i>').join('') + '<span class="bs' + (s >= 5 ? ' f' : '') + '">JEFE</span></div>';
+  h += '<small>' + (s >= 5 ? c.b + ' te espera.' : 'Gana ' + (5 - s) + ' duelo' + (5 - s === 1 ? '' : 's') + ' en Normal o Difícil para llegar a ' + c.b.toLowerCase() + '.') + ' Premio: ' + (done ? '20 fragmentos' : 'pieza roja exclusiva' + (cur === 5 ? ' y 3 tickets' : '') + ' y la arena ' + Math.min(5, cur + 1)) + '.</small>';
+  if (bs > 0) h += '<button class="btn-link" id="storyBtn">Ver la historia</button>';
+  $('#hisList').innerHTML = h + '</div>';
+  $('#bossBtn').disabled = s < 5; $('#bossBtn').textContent = s >= 5 ? 'Combatir a ' + c.b.toLowerCase() : 'Jefe bloqueado · faltan ' + (5 - s);
+@@ 2325 2326 1
+  if (!PVP.on && !GUIDE.on && validBuild(build)) { openGarage(); return; }
+@@ 2328 2330 2
+  setColor(GUIDE.on ? 'petreo' : build.robot);
+  foeBuild = PVP.on ? PVP.opp.b : GUIDE.on ? GUIDE_FOE() : randomBuild();
+@@ 2334 2336 4
+  arenaK = PVP.on ? PVP.arena : GUIDE.on ? 1 : HXBOT ? hxRing() : isBoss ? ch : selArena;
+  G = PVP.on ? newGame(PVP.myB, foeBuild) : GUIDE.on ? newGame(GUIDE_YOU(), foeBuild) : applyDifficulty(newGame(build, foeBuild), HXBOT ? 'normal' : diff);
+  if (GUIDE.on) guideSetup(G);
+  else if (!PVP.on && col && col.mlv) G.you.mlv = col.mlv;
+@@ 2343 2344 1
+  { const bt = document.querySelector('.arena.battle'); bt.className = 'arena battle ar' + Math.min(5, arenaK); }
+@@ 2347 2348 1
+  $('#foe').innerHTML = fighterStats('foe', G.foe, PVP.on ? PVP.opp.name : GUIDE.on ? 'Bot de práctica' : HXBOT ? 'Bot del anillo ' + ROMAN[arenaK - 1] : isBoss ? 'JEFE ' + ch : 'Rival ' + DIFFS[diff].name);
+@@ 2356 2357 1
+  $('#msg').textContent = arenaK > 1 ? (HXBOT || PVP.ranked ? 'Anillo ' : 'Arena: ') + arenaInfo(arenaK).n + '. ' + arenaInfo(arenaK).r : '';
+@@ 2369 2371 1
+  if (!PVP.on && !GUIDE.on && tok === duelToken && (G.you.mods || []).length) await runTut(TUT_MODDUEL, 'modduel');
+@@ 2384 2385 6
+$('#quitBtn').addEventListener('click', () => {
+  const live = G && !G.over;
+  if (live && (HXBOT || (PVP.ranked && PVP.on && !PVP.gone))) hxGain('lose', PVP.oppRing || 0, HXBOT);
+  if (GUIDE.on) guideStop();
+  duelToken++; tutEnd(); busy = false; $('#end').hidden = true; const hx = HXBOT || PVP.ranked; pvpLeave(); HXBOT = false; show('home'); if (hx) goPage('home', true);
+});
+@@ 2388 2389 0
+@@ 2407 2421 1
+function startTour() { $('#rules').hidden = true; AU.init(); guideStart(); }
+@@ 2446 2447 2
+$('#nearbyBtn').addEventListener('click', () => { pvpOpen(); pvpHost(); });
+$('#joinBtn').addEventListener('click', () => { pvpOpen(); setTimeout(() => { try { $('#pvpCode').focus(); } catch (e) {} }, 60); });
+@@ 2449 2450 1
+$('#again').addEventListener('click', () => { if (PVP.ranked || HXBOT) { $('#end').hidden = true; pvpLeave(); HXBOT = false; show('home'); goPage('home', true); seekOpen(); } else if (PVP.code) pvpAgain(); else startDuel(); });
+@@ 2451 2452 1
+$('#endHome').addEventListener('click', () => { const hx = HXBOT || PVP.ranked; $('#end').hidden = true; pvpLeave(); HXBOT = false; show('home'); if (hx) goPage('home', true); });
+@@ 2474 2475 0
+@@ 2497 2498 2
+  { id: 'ag_mar', k: 'mar', r: 's', n: 'Marco plateado', v: 'f-plata', stars: 6, hint: 'Consíguelo con 6 estrellas ★.' },
+  { id: 'x_col', k: 'col', r: 'x', n: 'Brillo del Hexx', v: '#ff7a3a', hint: 'Solo sale en remanentes arcoíris del Hexx.' }, { id: 'x_emb', k: 'emb', r: 'x', n: 'Cristal del Hexx', v: 'cris', hint: 'Solo sale en remanentes arcoíris del Hexx.' }, { id: 'x_mar', k: 'mar', r: 'x', n: 'Anillo del Hexx', v: 'f-neon', hint: 'Solo sale en remanentes arcoíris del Hexx.' }
+@@ 2500 2501 1
+const RN = { g: 'Gris', b: 'Azul', r: 'Rojo', o: 'Dorado', s: 'Plateado', x: 'Exclusivo del Hexx' };
+@@ 2554 2555 1
+  if (o === 'm') { const rr = Math.random() < .25 ? 'r' : 'b', pool = MOD_IDS.filter(i => i !== 'm_blind' && MODS[i].r === rr), id = pool[Math.floor(Math.random() * pool.length)]; col.mod = col.mod || {}; if (!col.mod[id]) { col.mod[id] = 1; nw = true; txt = 'Pieza nueva: ' + MODS[id].name; } else { const f = rr === 'r' ? 8 : 5; col.inv.chat += f; dupf = f; txt = MODS[id].name + ' repetida: +' + f + ' de chatarra'; } mod = id; }
+@@ 2575 2576 3
+  $('#spinBtn').disabled = spinning || col.tk <= 0; $('#spinBtn').innerHTML = col.tk > 0 ? 'Girar <small>1 ticket</small>' : 'Sin tickets';
+  $('#spin5Btn').disabled = spinning || col.tk < 5; $('#spin5Btn').innerHTML = 'Girar ×5 <small>5 tickets</small>';
+  { const n = Math.min(5, col.since | 0); $('#pity').innerHTML = '<span>Garantía</span><div class="pp">' + [0, 1, 2, 3, 4].map(i => '<i class="' + (i < n ? 'f' : '') + '"></i>').join('') + '</div><small>' + (n >= 5 ? '¡El siguiente giro trae algo nuevo seguro!' : n + ' de 5 giros sin algo nuevo') + '</small>'; }
+@@ 2580 2581 1
+  $('#colMis').innerHTML = '<div class="legend">' + LG.map(([k, n, p]) => '<div class="lg"><i style="background:' + SLC[k] + '"><svg viewBox="-13 -13 26 30">' + sliceIco(k) + '</svg></i><span>' + n + '</span><u><s style="width:' + p * 2.4 + '%;background:' + SLC[k] + '"></s></u><b>' + p + '%</b></div>').join('') + '</div><div class="rnotes"><div class="rn2"><b>Garantía</b><small>Si en 5 giros no te sale nada nuevo, el siguiente es seguro.</small></div><div class="rn2"><b>Elige tú</b><small>25 / 40 / 60 fragmentos = un cosmético gris / azul / rojo a elección.</small></div></div>';
+@@ 2582 2583 1
+function openCol() { $('#colMsg').textContent = ''; pend = ''; recTab = 'rul'; goPage('rec'); renderRwd(); }
+@@ 2592 2595 5
+$('#fragBtn').addEventListener('click', () => { if (col.fr < 10) return; col.fr -= 10; col.tk++; saveCol(); updateBadge(); AU.tap(); showPrize('<div class="prize pop"><div class="big">+1</div><div><b>Giro listo</b><br><small>Cambiaste 10 fragmentos por 1 giro</small></div></div>'); renderCol(); });
+function showPrize(h) { $('#prizeIn').innerHTML = h; $('#prizePop').hidden = false; }
+$('#prizeOk').addEventListener('click', () => { AU.tap(); $('#prizePop').hidden = true; });
+// ---- rueda: 8 cristales alrededor de un núcleo ----
+const SLICES = [['f1', 12.5], ['g', 12.5], ['f3', 12.5], ['b', 12.5], ['f1', 12.5], ['x', 12.5], ['r', 12.5], ['m', 12.5]];
+@@ 2604 2605 1
+  if (k === 'x') return '<path d="M-11 -7h22v4a3 3 0 0 0 0 6v4h-22v-4a3 3 0 0 0 0-6z" fill="#2c1c00"/><path d="M-3 0h6M0 -3v6" stroke="#ffd34a" stroke-width="2.2" stroke-linecap="round"/>';
+@@ 2610 2614 8
+  let h = '<circle r="106" fill="#0a0f16"/><circle r="100" fill="none" stroke="#162030" stroke-width="10"/>';
+  SLA.forEach(s => {
+    const c = SLC[s.k];
+    h += '<g transform="rotate(' + s.mid.toFixed(1) + ')">' +
+      '<polygon class="cry" points="0,-101 19,-82 14,-42 0,-33 -14,-42 -19,-82" fill="' + c + '" stroke="#0a0f16" stroke-width="2" stroke-linejoin="round"/>' +
+      '<polygon points="0,-101 -19,-82 -14,-42 0,-33" fill="#fff" opacity=".2"/>' +
+      '<polygon points="0,-101 19,-82 0,-74" fill="#fff" opacity=".28"/>' +
+      '<g transform="translate(0,-66) scale(.78)">' + sliceIco(s.k) + '</g></g>';
+@@ 2615 2616 0
+@@ 2617 2618 0
+@@ 2619 2620 1
+  let fr = '<defs><linearGradient id="wfr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b485c"/><stop offset=".5" stop-color="#18202c"/><stop offset="1" stop-color="#0a0e14"/></linearGradient></defs>';
+@@ 2621 2623 2
+  fr += '<circle r="111" fill="none" stroke="#ffd34a" stroke-width="3"/>';
+  for (let a = 0; a < 360; a += 15) fr += '<circle class="bulb" cx="' + (118 * Math.sin(a * Math.PI / 180)).toFixed(1) + '" cy="' + (-118 * Math.cos(a * Math.PI / 180)).toFixed(1) + '" r="2.6"/>';
+@@ 2628 2629 1
+  if (r.mod) { const m = MODS[r.mod]; return '<div class="prize r-' + m.r + ' pop"><div class="big">⬢</div><div><b>' + (r.dupf ? 'Repetida' : '¡Pieza nueva!') + '</b><br>' + m.name + '<br><small>' + (r.dupf ? '+' + r.dupf + ' de chatarra para mejorar módulos' : 'Equípala en el Garaje') + '</small></div></div>'; }
+@@ 2632 2632 21
+function wheelSparks(color) {
+  const el = $('#wSparks'); if (!el || RM) return;
+  el.style.setProperty('--wg', color);
+  el.innerHTML = [...Array(16)].map((_, i) => '<i style="--a:' + (-70 + i * 9.3 + Math.random() * 6).toFixed(0) + 'deg;--d:' + (50 + Math.random() * 60).toFixed(0) + 'px;--t:' + (0.5 + Math.random() * 0.4).toFixed(2) + 's"></i>').join('');
+  setTimeout(() => { el.innerHTML = ''; }, 1100);
+}
+function spinTo(r, dur, done) {
+  const opts = SLA.filter(s => s.k === r.o), pickS = opts[Math.floor(Math.random() * opts.length)];
+  const mid = pickS.mid + (Math.random() - .5) * (pickS.a1 - pickS.a0) * .6;
+  const reduce = RM, d = reduce ? 500 : dur;
+  wheelRot = Math.ceil(wheelRot / 360) * 360 + 360 * (d > 4000 ? 7 : 5) - mid; const ww = document.querySelector('.wheelwrap'); ww.classList.add('spinning');
+  const g = $('#wheelG'); g.style.transition = 'transform ' + d + 'ms cubic-bezier(.1,.62,.06,1)'; g.style.transform = 'rotate(' + wheelRot + 'deg)';
+  const nT = reduce ? 0 : Math.round(d / 115); for (let k = 1; k <= nT; k++) setTimeout(() => AU.tap(), d * (1 - Math.pow(1 - k / nT, 1 / 3)) * .98);
+  setTimeout(() => {
+    spinning = false; ww.classList.remove('spinning');
+    const col2 = r.o === 'r' ? '#ff5a4a' : r.o === 'b' ? '#4fa3ff' : (r.nw || r.o === 'x') ? '#ffd34a' : '#1fb5a8';
+    ww.style.setProperty('--wg', col2); ww.classList.add('wglow', 'bump'); wheelSparks(col2); buzz([20, 30, 40]);
+    setTimeout(() => ww.classList.remove('wglow', 'bump'), 1300);
+    done(); renderCol();
+  }, d + 80);
+}
+@@ 2634 2646 9
+  const r = spinOnce(); renderCol(); $('#colMsg').textContent = '';
+  spinTo(r, 5000, () => { (r.nw || r.o === 'x') ? AU.win() : AU.ready(); setTimeout(() => showPrize(prizeHTML(r)), 450); });
+});
+$('#spin5Btn').addEventListener('click', () => {
+  if (spinning || col.tk < 5) return; spinning = true; pend = '';
+  const rs = []; for (let k = 0; k < 5; k++) rs.push(spinOnce());
+  renderCol(); $('#colMsg').textContent = '';
+  const best = rs.find(r => r.nw) || rs[rs.length - 1];
+  spinTo(best, 3400, () => { rs.some(r => r.nw) ? AU.win() : AU.ready(); setTimeout(() => showPrize('<div class="p5">' + rs.map(prizeHTML).join('') + '</div>'), 450); });
+@@ 2673 2674 1
+// ===== navegación: 5 pestañas abajo y pantallas que se deslizan =====
+@@ 2675 2684 2
+const PGID = { gar: 'pgGar', rec: 'pgRec', home: 'pgHome', ent: 'pgEnt', prof: 'pgProf', aj: 'pgAj' }, PGS = ['gar', 'rec', 'home', 'ent', 'prof', 'aj'];
+const PG_ALIAS = { col: 'rec', mer: 'rec', mis: 'rec', his: 'ent', garage: 'gar' };
+@@ 2686 2688 2
+  const t = curPage === 'aj' ? 'prof' : curPage;
+  $$('#tabbar [data-go]').forEach(b => { const on = b.dataset.go === t; b.classList.toggle('cur', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+@@ 2689 2689 1
+function closeFan() {}
+@@ 2690 2692 6
+  if (n === curPage) return;
+  if (curPage === 'gar' && draft) { commitDraft(); draft = null; }
+  curPage = n; updateNav(); AU.nav();
+  if (n === 'home') renderHome(); else if (n === 'ent') renderEnt(); else if (n === 'rec') renderRwd(); else if (n === 'prof') { renderProfile(); renderCol(); }
+  else if (n === 'gar') { draft = clone(build); focusCard = null; garageNote = ''; renderGarage(); }
+  if (typeof tipFor === 'function') tipFor(n);
+@@ 2694 2695 1
+  n = PG_ALIAS[n] || n;
+@@ 2696 2698 2
+  const p = pagerEl(), el = document.getElementById(PGID[n]); if (!p || !el) return;
+  p.scrollTo({ left: el.offsetLeft, behavior: instant || RM ? 'auto' : 'smooth' }); onPage(n);
+@@ 2699 2721 1
+$('#tabbar').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (!b) return; AU.tap(); buzz(8); goPage(b.dataset.go); });
+@@ 2724 2727 1
+show = function (v) { _show(v); if (v === 'home') { const n = PGID[curPage] ? curPage : 'home'; const p = pagerEl(), hp = document.getElementById(PGID[n]); if (p && hp) p.scrollLeft = hp.offsetLeft; updateNav(); } };
+@@ 2728 2737 12
+updateNav(); updateBadge();
+$('#gearBtn').addEventListener('click', () => { AU.tap(); goPage('aj'); });
+$('#gearBtn2').addEventListener('click', () => { AU.tap(); goPage('aj'); });
+$('#ajBack').addEventListener('click', () => { AU.tap(); goPage('prof'); });
+$('#hxMe').addEventListener('click', () => { AU.tap(); goPage('prof'); });
+$('#teamBtn').addEventListener('click', () => { AU.tap(); goPage('gar'); });
+$('#recTabs').addEventListener('click', e => { const b = e.target.closest('[data-rt]'); if (!b) return; AU.tap(); recTab = b.dataset.rt; renderRwd(); });
+var recTab = 'rul';
+function renderRwd() {
+  $$('#recTabs [data-rt]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.rt === recTab)));
+  $('#recRul').hidden = recTab !== 'rul'; $('#recMis').hidden = recTab !== 'mis'; $('#recMer').hidden = recTab !== 'mer';
+  renderCol(); if (recTab === 'mis') renderMis(); if (recTab === 'mer') renderMer();
+@@ 2738 2740 1
+function renderEnt() { try { renderArena(); renderDiff(); renderHis(); } catch (e) {} }
+@@ 2873 2875 3
+const pvpTopic = (code, role) => 'litopulso10/' + code + '/' + role;
+const cleanName = s => String(s || 'Rival').replace(/[<>&"#]/g, '').slice(0, 14) || 'Rival';
+const cleanTag = s => String(s || '').replace(/[^0-9]/g, '').slice(0, 4);
+@@ 2895 2896 1
+  clearInterval(PVP.tick); pvpClockStop(); { const eb = document.getElementById('emoBtn'); if (eb) eb.hidden = true; const ep = document.getElementById('emoPan'); if (ep) ep.hidden = true; }
+@@ 2935 2936 1
+  if (was) setTimeout(() => { if (!PVP.code && !SEEK.on) NET.stop(); }, 700);
+@@ 2942 2943 1
+  PVP.arena = PVP.ranked ? Math.min(hxRing(), PVP.oppRing || hxRing()) : selArena;
+@@ 2944 2945 1
+  pvpSend({ t: 'start', to: PVP.sid, seed: PVP.seed, arena: PVP.arena, name: pname, tag: myTag(), ring: hxRing(), b: PVP.myB });
+@@ 2951 2953 2
+  $('#pvp').hidden = true; $('#end').hidden = true; $('#seek').hidden = true;
+  startDuel(); emoReady();
+@@ 2957 2957 1
+  if (m.t === 'emo') { emoShow('foe', m.e); return; }
+@@ 2962 2964 2
+      if (!PVP.sid) { PVP.sid = m.sid; PVP.opp = { name: cleanName(m.name), tag: cleanTag(m.tag), b: m.b }; if (!PVP.oppRing) PVP.oppRing = Math.min(6, Math.max(1, m.ring | 0)) || 0; pvpNewRound(); }
+      else if (PVP.okRound !== PVP.round) pvpSend({ t: 'start', to: PVP.sid, seed: PVP.seed, arena: PVP.arena, name: pname, tag: myTag(), ring: hxRing(), b: PVP.myB });
+@@ 2970 2971 1
+      PVP.round = m.r; PVP.seed = m.seed >>> 0; PVP.arena = Math.min(6, Math.max(1, m.arena | 0)); PVP.opp = { name: cleanName(m.name), tag: cleanTag(m.tag), b: m.b };
+@@ 2997 2997 1
+    if (PVP.ranked && (PVP.gone || now - PVP.t0 > 10000)) { pvpCancel(); seekOpen(true); return; }
+@@ 2998 2999 1
+    if (PVP.role === 'g') pvpSend({ t: 'hello', sid: NET.me, name: pname, tag: myTag(), ring: hxRing(), b: PVP.myB, v: 10 });
+@@ 3001 3002 1
+  if (PVP.role === 'h' && PVP.okRound !== PVP.round && PVP.state === 'play') pvpSend({ t: 'start', to: PVP.sid, seed: PVP.seed, arena: PVP.arena, name: pname, tag: myTag(), ring: hxRing(), b: PVP.myB });
+@@ 3052 3053 1
+  } else if (!$('#end').hidden && !PVP.ranked) { $('#xpText').textContent = note; $('#again').disabled = true; }
+@@ 3078 3080 8
+  const who = PVP.opp.name + (PVP.opp.tag ? '#' + PVP.opp.tag : '');
+  let up = '';
+  if (PVP.ranked) {
+    let note = '';
+    if (!PVP.void && !PVP.hxDone) { PVP.hxDone = true; const g = xpBoost(XP_TABLE.normal[res]); up = addXp(g); note = '+' + g + ' XP' + (XPB_LAST ? ' (Cristal ×2)' : '') + hxNote(hxGain(res, PVP.oppRing, false)); }
+    $('#xpText').textContent = (PVP.note ? PVP.note + ' ' : 'Contra ' + who + ' · ') + note.replace(/^ · /, '');
+  } else $('#xpText').textContent = PVP.note || ('En línea contra ' + who + ' · tu récord: ' + pvpRec.w + '-' + pvpRec.d + '-' + pvpRec.l);
+  $('#endUp').hidden = !up; $('#endUp').innerHTML = up;
+@@ 3081 3083 2
+  $('#again').textContent = PVP.ranked ? 'Buscar otro rival' : 'Revancha'; $('#again').disabled = !PVP.ranked && !!PVP.gone;
+  $('#endHome').textContent = PVP.ranked ? 'Volver al Hexx' : 'Salir';
+@@ 3092 3092 4
+  if ($('#com')) return true;
+  if (!$('#prizePop').hidden) { $('#prizePop').hidden = true; return true; }
+  if (!$('#remSheet').hidden) { $('#remSheet').hidden = true; return true; }
+  if (!$('#seek').hidden) { seekCancel(); return true; }
