@@ -1,0 +1,447 @@
+const MODS = {
+  m_nuc:   { part: 'head', r: 'r', name: 'Núcleo comprimido', costHp: 15, pro: 'Tu racha sube al máximo: Sobrecarga lista.', con: 'Pierdes 15 de vida.' },
+  m_visor: { part: 'head', r: 'b', name: 'Visor afilado',     costEn: 2,  pro: 'Ves la carta que jugará el rival este turno.', con: 'Cuesta 2 de energía.' },
+  m_antena:{ part: 'head', r: 'b', name: 'Antena',            costHp: 12, pro: 'El rival pierde 4 de energía.', con: 'Pierdes 12 de vida.' },
+  m_blind: { part: 'body', r: 'b', name: 'Blindaje',          costEn: 2,  pro: 'Este turno recibes la mitad del daño.', con: 'Cuesta 2 de energía.' },
+  m_reac:  { part: 'body', r: 'r', name: 'Reactor inestable', costHp: 20, pro: 'Ganas 5 de energía ahora.', con: 'Pierdes 20 de vida.' },
+  m_banco: { part: 'body', r: 'b', name: 'Banco amplio',      costEn: 1,  pro: 'Cambias 3 de tus cartas por otras al azar.', con: 'Cuesta 1 de energía. No sirve durante Barajar ni Mano corta.' },
+  m_imp:   { part: 'legs', r: 'b', name: 'Impulso',           costHp: 10, pro: 'Ganas 3 de racha ahora.', con: 'Pierdes 10 de vida.' },
+  m_anc:   { part: 'legs', r: 'b', name: 'Anclaje',           costEn: 3,  pro: 'Este turno no recibes daño.', con: 'Cuesta 3 de energía.' },
+  m_salto: { part: 'legs', r: 'r', name: 'Salto',             costEn: 3,  pro: 'Este turno tus golpes hacen +25 de daño.', con: 'Cuesta 3 de energía.' },
+  s_petreo:{ part: 'spec', r: 'r', robot: 'petreo',  name: 'Piel viva',    costEn: 4,  pro: 'Recuperas 20 % de tu vida máxima.', con: 'Cuesta 4 de energía.' },
+  s_granito:{ part: 'spec', r: 'r', robot: 'granito', name: 'Núcleo lento', costHp: 25, pro: '30 de daño directo al rival (nunca lo deja en menos de 1).', con: 'Pierdes 25 de vida.' },
+  s_cuarzo:{ part: 'spec', r: 'r', robot: 'cuarzo',  name: 'Prisma',       costHp: 10, pro: 'Robas 3 de energía al rival.', con: 'Pierdes 10 de vida.' }
+};
+function modWhy(g, side, id) {
+  const m = MODS[id], f = g[side], o = g[side === 'you' ? 'foe' : 'you'];
+  if (!m || g.over) return 'No disponible';
+  if ((g.used && g.used[side] && g.used[side][id])) return 'Ya usada';
+  if (m.costHp && f.hp <= m.costHp) return 'Poca vida';
+  if (m.costEn) { const mc = Math.min(...f.hand.filter(c => c.type !== 'over' && !dLock(f, c) && !(f.locked && f.locked.includes(c.id))).map(c => c.cost)); if (f.en - m.costEn < mc) return 'Poca energía'; }
+  if (id === 'm_banco' && g.ev && (g.ev.id === 'barajar' || g.ev.id === 'corta')) return 'Bloqueada por el evento';
+  return '';
+}
+function useMod(g, side, id, rnd) {
+  rnd = rnd || Math.random;
+  if (modWhy(g, side, id)) return false;
+  const m = MODS[id], f = g[side], o = g[side === 'you' ? 'foe' : 'you'];
+  g.used = g.used || { you: {}, foe: {} }; g.used[side][id] = 1;
+  if (m.costHp) f.hp -= m.costHp;
+  if (m.costEn) f.en -= m.costEn;
+  if (id === 'm_nuc') f.sc = CFG.scMax;
+  else if (id === 'm_antena') o.en = Math.max(0, o.en - 4);
+  else if (id === 'm_blind') f.shield = true;
+  else if (id === 'm_reac') f.en = Math.min(CFG.maxEnergy, f.en + 5);
+  else if (id === 'm_banco') {
+    const pool = CARD_IDS.filter(i => !f.hand.some(h => h.id === i)), h = f.hand.slice(), keep = h.reduce((b, c, i) => c.cost < h[b].cost ? i : b, 0);
+    let n = 0; for (let i = 0; i < h.length && n < 3; i++) { if (i === keep) continue; h[i] = CARDS[pool.splice(Math.floor(rnd() * pool.length), 1)[0]]; n++; }
+    f.hand = h;
+  }
+  else if (id === 'm_imp') f.sc = Math.min(CFG.scMax, f.sc + 3);
+  else if (id === 'm_anc') f.immune = true;
+  else if (id === 'm_salto') { f.edge = (f.edge || 0) + 25; f._boost = (f._boost || 0) + 25; }
+  else if (id === 's_petreo') f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.2));
+  else if (id === 's_granito') o.hp = Math.max(1, o.hp - 30);
+  else if (id === 's_cuarzo') { const t = Math.min(3, o.en); o.en -= t; f.en = Math.min(CFG.maxEnergy, f.en + 3); }
+  return true;
+}
+function bossUse(g, rnd) {
+  rnd = rnd || Math.random;
+  const f = g.foe, p = g.you, out = [], hpPct = f.hp / f.maxHp;
+  for (const id of (f.mods || [])) {
+    if (modWhy(g, 'foe', id)) continue;
+    let ok = false;
+    if (id === 'm_anc') ok = p.sc >= overNeed(p) || (p.en >= 8 && rnd() < 0.3);
+    else if (id === 'm_reac') ok = f.en <= 2 && hpPct > 0.5;
+    else if (id === 'm_nuc') ok = f.sc >= 2 && hpPct > 0.4 && rnd() < 0.5;
+    else if (id === 'm_blind') ok = p.en >= 6 && rnd() < 0.4;
+    else if (id === 'm_antena') ok = p.en >= 6 && hpPct > 0.5;
+    else if (id === 's_petreo') ok = hpPct < 0.45;
+    else if (id === 's_granito') ok = g.turn >= 6 && p.hp > 40 && rnd() < 0.35;
+    else if (id === 's_cuarzo') ok = p.en >= f.en + 3;
+    if (ok && useMod(g, 'foe', id, rnd)) out.push(id);
+  }
+  return out;
+}
+const takeOf = x => x.immune ? 0 : (x.take || 1) * (x.shield ? 0.5 : 1);
+const MOD_IDS = Object.keys(MODS);
+const ROBOTS = {
+  petreo:  { name: 'Pétreo',  hp: 169, en: 5, color: '#3fd9d2', short: 'Equilibrado', text: '169 de vida y 5 de energía inicial.' },
+  granito: { name: 'Granito', hp: 196, en: 3, color: '#b79cff', short: 'Resistente',  text: '196 de vida, pero empieza con solo 3 de energía.' },
+  cuarzo:  { name: 'Cuarzo',  hp: 142, en: 8, color: '#8ee26b', short: 'Veloz',       text: '142 de vida, pero empieza con 8 de energía.' }
+};
+const CARD_IDS = Object.keys(CARDS), PASSIVE_IDS = Object.keys(PASSIVES), ROBOT_IDS = Object.keys(ROBOTS);
+function passivesOf(robotId) { return PASSIVE_IDS.filter(id => PASSIVES[id].robot === robotId); }
+
+let POOL = CARD_IDS.slice();
+function setPool(ids) { POOL = ids.slice(); CFG.handSize = Math.min(5, POOL.length); }
+function isDef(c) { return c.type === 'guard' || c.type === 'dodge'; }
+function statOf(c) {
+  if (c.dmg && (c.gain || c.drain || c.lockDodge || c.missLoss)) return '−' + c.dmg + ' +';
+  if (c.gain || c.drain) return (c.type === 'guard' ? 'Frena' : 'Evita') + ' +';
+  if (c.blockAll) return 'Frena Sobrec.';
+  if (c.dmg) return '−' + c.dmg;
+  if (c.reflect) return 'Frena +' + c.reflect;
+  if (c.half) return 'Evita ½';
+  return c.type === 'guard' ? 'Frena' : 'Evita';
+}
+
+// daño que `att` le hace a quien jugó `def`
+function hit(att, def, atkF, defF) {
+  let d = 0;
+  if (att.type === 'attack') d = def.type === 'guard' ? 0 : att.dmg;
+  else if (att.type === 'skill') d = def.type === 'dodge' ? 0 : att.dmg;
+  else if (att.type === 'over') d = def.type === 'dodge' ? 0 : def.type === 'guard' ? (def.blockAll ? 0 : Math.round(att.dmg / 2)) : att.dmg;
+  if (d > 0 && def.half && att.type === 'attack') d = Math.round(d / 2);
+  if (d > 0 && atkF && defF && atkF.fury && atkF.hp < defF.hp) d += atkF.fury;
+  if (d > 0 && atkF && atkF.edge) d += atkF.edge;
+  if (d > 0 && att.type === 'over' && atkF && atkF.overAdd) d += atkF.overAdd;
+  if (d > 0 && att.type === 'attack' && defF && defF.takeAtk) d += defF.takeAtk;
+  return d;
+}
+function reflectOf(guardCard, attCard, F) { let r = guardCard.reflect && attCard.type === 'attack' ? guardCard.reflect : 0; if (r === 0 && guardCard.type === 'guard' && attCard.type === 'attack' && F && F.refAdd) r = F.refAdd; else if (r > 0 && F && F.refAdd) r += F.refAdd; return r; }
+
+function tagOf(me, foe) {
+  const big = foe === 'skill' || foe === 'over';
+  switch (me) {
+    case 'attack': return foe === 'guard' ? 'blocked' : 'landed';
+    case 'skill': return foe === 'dodge' ? 'dodged' : foe === 'guard' ? 'broke' : 'landed';
+    case 'over': return foe === 'dodge' ? 'dodged' : foe === 'guard' ? 'broke' : 'landed';
+    case 'guard': return foe === 'attack' ? 'blocked' : big ? 'broken' : 'idle';
+    default: return big ? 'dodged' : foe === 'attack' ? 'hit' : 'idle';
+  }
+}
+function resolve(pc, bc, y, f) {
+  return {
+    toFoe: Math.round((hit(pc, bc, y, f) + reflectOf(pc, bc, y)) * takeOf(f)),
+    toYou: Math.round((hit(bc, pc, f, y) + reflectOf(bc, pc, f)) * takeOf(y)),
+    tagYou: tagOf(pc.type, bc.type),
+    tagFoe: tagOf(bc.type, pc.type)
+  };
+}
+// +1 con un acierto limpio, -1 (se pierde la racha) si te golpean sin golpear o tu golpe falla
+function streakDelta(c, toFoe, toYou, tag) {
+  if (c.type === 'over') return 0;
+  if (toFoe > toYou) return 1;
+  if (toYou > 0 && toFoe === 0) return -1;
+  if (tag === 'blocked' || tag === 'dodged') return isDef(c) ? 1 : -1;
+  return 0;
+}
+
+const EVENTS = {
+  barajar: { name: 'Barajar', text: 'Cambias 4 de tus 5 cartas por otras al azar. Luego recuperas tu mano.' },
+  corta:   { name: 'Mano corta', text: 'Solo puedes jugar 3 de tus 5 cartas.' },
+  sobre:   { name: 'Sobrecarga rápida', text: 'La Sobrecarga se activa con racha 2.' },
+  coraza:  { name: 'Vida doble', text: 'Todo el daño se reduce a la mitad.' },
+  pesado:  { name: 'Golpes pesados', text: 'Todo el daño aumenta 50 %.' },
+  ayuno:   { name: 'Recarga doble', text: 'Los dos recuperan el doble de energía por turno.' },
+  llena:   { name: 'Energía llena', text: 'Los dos recuperan toda la energía ahora.', dur: 1 },
+  cambio:  { name: 'Intercambio', text: 'Los dos intercambian su energía actual.', dur: 1 },
+  racha:   { name: 'Racha regalada', text: 'Los dos ganan +2 de racha ahora.', dur: 1 },
+  cura:    { name: 'Reparación', text: 'Los dos recuperan 15 % de su vida.', dur: 1 },
+  colapso: { name: 'Colapso', text: 'Los dos pierden 30 % de su vida actual ahora.', dur: 1 },
+  desgaste:{ name: 'Desgaste', text: 'Los dos pierden 7 de vida al final de cada turno.' },
+  furia:   { name: 'Furia', text: 'Todo el daño se duplica.' }
+};
+const EV_LATE = ['colapso', 'desgaste', 'furia', 'pesado'], EV_AT = [10, 15, 20, 25];
+const EV_IDS = Object.keys(EVENTS).filter(i => !['colapso', 'desgaste', 'furia'].includes(i));
+const overNeed = f => f.scNeed || CFG.scMax;
+function evPick(g, rnd, late) { rnd = rnd || g.rng || Math.random; const l = (late ? EV_LATE : EV_IDS).filter(i => i !== g.evLast); return l[Math.floor(rnd() * l.length)]; }
+function evStart(g, rnd, id) {
+  rnd = rnd || g.rng || Math.random; id = id || evPick(g, rnd);
+  const fs = [g.you, g.foe];
+  g.ev = { id, left: EVENTS[id].dur || 3, saved: [] }; g.evNew = id; g.evLast = id; g.evNext = null;
+  if (id === 'cambio') { const t = g.you.en; g.you.en = g.foe.en; g.foe.en = t; }
+  fs.forEach(f => {
+    const rnd2 = rnd; { const rnd = f.rng || rnd2;
+    if (id === 'barajar') {
+      g.ev.saved.push(f.hand.slice());
+      const pool = CARD_IDS.filter(i => !f.hand.some(h => h.id === i)), h = f.hand.slice();
+      const keep = h.reduce((b, c, i) => c.cost < h[b].cost ? i : b, 0);
+      let n = 0; for (let i = 0; i < h.length && n < 4; i++) { if (i === keep) continue; const k = Math.floor(rnd() * pool.length); h[i] = CARDS[pool.splice(k, 1)[0]]; n++; }
+      f.hand = h;
+    } else if (id === 'corta') {
+      const keep = f.hand.reduce((b, c, i) => c.cost < f.hand[b].cost ? i : b, 0), idx = f.hand.map((_, i) => i).filter(i => i !== keep);
+      f.locked = []; while (f.locked.length < 2) f.locked.push(f.hand[idx.splice(Math.floor(rnd() * idx.length), 1)[0]].id);
+    } else if (id === 'sobre') f.scNeed = 2;
+    else if (id === 'coraza') f.take = 0.5;
+    else if (id === 'pesado') f.take = 1.5;
+    else if (id === 'furia') f.take = 2;
+    else if (id === 'colapso') f.hp = Math.max(1, f.hp - Math.round(f.hp * 0.3));
+    else if (id === 'ayuno') { g.ev.saved.push(f.regen); f.regen = f.regen * 2; }
+    else if (id === 'llena') f.en = CFG.maxEnergy;
+    else if (id === 'racha') f.sc = Math.min(CFG.scMax, f.sc + 2);
+    else if (id === 'cura') f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.15));
+    }
+  });
+}
+function evEnd(g) {
+  const id = g.ev.id;
+  [g.you, g.foe].forEach((f, k) => {
+    if (id === 'barajar') f.hand = g.ev.saved[k]; else if (id === 'corta') f.locked = null; else if (id === 'sobre') { if (f.arNeed) f.scNeed = f.arNeed; else delete f.scNeed; } else if (id === 'coraza' || id === 'pesado' || id === 'furia') f.take = 1; else if (id === 'ayuno') f.regen = g.ev.saved[k];
+  });
+  g.ev = null;
+}
+const dLock = (f, c) => (f.lockDodge || 0) > 0 && c.type === 'dodge' && f.hand.some(h => h.type !== 'dodge' && h.cost <= f.en);
+function can(f, c) { if (dLock(f, c) || (f.locked && f.locked.includes(c.id))) return false; return c.type === 'over' ? f.sc >= overNeed(f) : c.cost <= f.en; }
+function afford(f) {
+  const l = f.hand.filter(c => c.cost <= f.en && !dLock(f, c) && !(f.locked && f.locked.includes(c.id)));
+  if (f.sc >= overNeed(f)) l.push(OVER);
+  return l;
+}
+// ciclo: Ataque > Esquiva > Habilidad > Defensa > Ataque
+function counterOf(t) { return { attack: 'guard', guard: 'skill', skill: 'dodge', dodge: 'attack', over: 'dodge' }[t]; }
+const DIFFS = {
+  easy:   { name: 'Fácil',   text: 'Se equivoca seguido y tiene 10% menos de vida.',
+            over: 0.10, blunder: 0.70, foolish: 0.3, trust: 0,    explore: 0,    adapt: false, smart: false, econ: false, hp: 0.90 },
+  normal: { name: 'Normal',  text: 'Cambia de estilo y a veces te lee, tiene 30 % más de vida y golpea +2. Ganarle cuesta (cerca de 28 %).',
+            over: 0.50, blunder: 0.10, foolish: 0,   trust: 0.5,  explore: 0,    adapt: false, smart: false, econ: false, hp: 1.30, edge: 2 },
+  hard:   { name: 'Difícil', text: 'Aprende cómo juegas, cambia de táctica, cuida su energía, tiene 44 % más de vida y golpea +3. Ganarle es raro (cerca de 20 %).',
+            over: 1.00, blunder: 0,    foolish: 0,   trust: 0.95, explore: 0.06, adapt: true,  smart: true,  econ: true,  hp: 1.44, edge: 3 }
+};
+const DIFF_IDS = Object.keys(DIFFS);
+const BASE_TYPES = ['attack', 'guard', 'dodge', 'skill'];
+const PERSONAS = [
+  { attack: 4, skill: 3, guard: 1, dodge: 1 },   // agresivo
+  { attack: 1, skill: 2, guard: 3, dodge: 3 },   // defensivo
+  { attack: 2, skill: 2, guard: 2, dodge: 2 }    // equilibrado
+];
+function topOf(counts) {
+  let best = null, n = 0;
+  for (const k in counts) if (counts[k] > n) { n = counts[k]; best = k; }
+  return best;
+}
+function bestCard(opts, type, rng, smart) {
+  const m = opts.filter(c => c.type === type);
+  if (!m.length) return null;
+  if (smart) return m.slice().sort((a, b) => (b.dmg || 0) - (a.dmg || 0) || a.cost - b.cost)[0];
+  return m[Math.floor(rng() * m.length)];
+}
+function applyDifficulty(g, diff) {
+  const D = DIFFS[diff] || DIFFS.normal;
+  if (D.hp && D.hp !== 1) { g.foe.maxHp = Math.round(g.foe.maxHp * D.hp); g.foe.hp = g.foe.maxHp; }
+  if (D.edge) g.foe.edge = (g.foe.edge || 0) + D.edge;
+  return g;
+}
+function botPick(bot, hist, rng, diff, foe) {
+  rng = rng || Math.random;
+  const D = DIFFS[diff] || DIFFS.normal;
+  const opts = afford(bot);
+  if (!opts.length) return bot.hand.slice().sort((a, b) => a.cost - b.cost)[0];
+  const ai = bot.ai || (bot.ai = { last: null, score: { last: 0, freq: 0, mk: 0, chain: 0 }, preds: {}, persona: PERSONAS[Math.floor(rng() * PERSONAS.length)], key: null, keyAge: 0 });
+  const done = c => { ai.last = c.type; return c; };
+  // aprende: qué predictor acertó con la última jugada del jugador
+  if (hist.length) {
+    const actual = hist[hist.length - 1];
+    for (const k in ai.score) ai.score[k] = ai.score[k] * 0.8 + (ai.preds[k] === actual ? 1 : 0);
+  }
+  const P = {};
+  if (hist.length) {
+    const last = hist[hist.length - 1];
+    P.last = last;
+    const f = {}; hist.slice(-8).forEach(t => { f[t] = (f[t] || 0) + 1; }); P.freq = topOf(f);
+    const m = {}; for (let i = 0; i < hist.length - 1; i++) if (hist[i] === last) m[hist[i + 1]] = (m[hist[i + 1]] || 0) + 1;
+    if (Object.keys(m).length) P.mk = topOf(m);
+    if (ai.last) P.chain = counterOf(ai.last);
+  }
+  ai.preds = P;
+  let pred = null, conf = 0;
+  const keys = Object.keys(P);
+  if (keys.length) {
+    if (D.adapt) {
+      const k = keys.slice().sort((x, y) => ai.score[y] - ai.score[x])[0];
+      pred = P[k]; conf = ai.score[k];
+    } else {
+      if (!ai.key || !P[ai.key] || ai.keyAge >= 3) { ai.key = keys[Math.floor(rng() * keys.length)]; ai.keyAge = 0; }
+      ai.keyAge++; pred = P[ai.key]; conf = 1;
+    }
+  }
+  const persona = () => {
+    const types = [...new Set(opts.map(c => c.type))];
+    let x = rng() * types.reduce((s, t) => s + (ai.persona[t] || 2), 0), pick = types[types.length - 1];
+    for (const t of types) { x -= ai.persona[t] || 2; if (x < 0) { pick = t; break; } }
+    return bestCard(opts, pick, rng, false);
+  };
+  // Sobrecarga
+  if (bot.sc >= overNeed(bot)) {
+    let p = D.over;
+    if (D.adapt && pred === 'dodge' && conf >= 1.2) p = 0.3;
+    if (D.adapt && foe && foe.hp <= CFG.overDmg && pred !== 'dodge') p = 1;
+    if (rng() < p) return done(OVER);
+  }
+  if (D.blunder && rng() < D.blunder) return done(opts[Math.floor(rng() * opts.length)]);
+  if (D.foolish && hist.length && rng() < D.foolish) {
+    const last = hist[hist.length - 1], loser = BASE_TYPES.find(t => counterOf(t) === last);
+    const c = bestCard(opts, loser, rng, false); if (c) return done(c);
+  }
+  if (D.explore && rng() < D.explore) return done(persona());
+  // economía (difícil): con poca energía recupera con una carta barata de defensa
+  if (D.econ && bot.en <= 2) {
+    const want = pred ? counterOf(pred) : null;
+    const def = opts.filter(c => c.type === 'guard' || c.type === 'dodge');
+    if (def.length) {
+      const m = def.filter(c => c.type === want);
+      return done((m.length ? m : def).slice().sort((a, b) => a.cost - b.cost)[0]);
+    }
+  }
+  if (pred && (conf >= (D.adapt ? 0.9 : 0)) && rng() < D.trust) {
+    const c = bestCard(opts, counterOf(pred), rng, D.smart);
+    if (c) return done(c);
+  }
+  return done(persona());
+}
+
+// ---------- equipos ----------
+function validBuild(b) {
+  if (!b || !ROBOTS[b.robot]) return 'Elige un robot.';
+  const cards = b.cards || [], pass = b.passives || [];
+  if (cards.length !== CFG.handSize || new Set(cards).size !== cards.length || cards.some(id => !CARDS[id] || !POOL.includes(id))) return 'Elige ' + CFG.handSize + ' cartas (' + cards.length + '/' + CFG.handSize + ').';
+  if (pass.length !== CFG.passiveSlots || new Set(pass).size !== pass.length || pass.some(id => !PASSIVES[id] || PASSIVES[id].robot !== b.robot)) return 'Elige ' + CFG.passiveSlots + ' pasivas (' + pass.length + '/' + CFG.passiveSlots + ').';
+  { const ms = b.mods || []; if (ms.length > 3 || new Set(ms).size !== ms.length || ms.some(id => !MODS[id] || (MODS[id].part === 'spec' && MODS[id].robot !== b.robot))) return 'Módulos no válidos.'; const uni = ms.filter(id => MODS[id].part !== 'spec'); if (uni.length > 2 || new Set(uni.map(id => MODS[id].part)).size !== uni.length || ms.filter(id => MODS[id].part === 'spec').length > 1) return 'Módulos no válidos.'; }
+  if (!cards.some(id => CARDS[id].cost <= 2)) return 'Incluye al menos una carta de costo 2 o menos.';
+  return '';
+}
+function shuffle(a, rng) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor((rng || Math.random)() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function randomBuild(rng) {
+  for (;;) {
+    const robot = shuffle(ROBOT_IDS, rng)[0];
+    const b = { robot, cards: shuffle(POOL, rng).slice(0, CFG.handSize), passives: shuffle(passivesOf(robot), rng).slice(0, CFG.passiveSlots) };
+    b.cards.sort((a, c) => CARD_IDS.indexOf(a) - CARD_IDS.indexOf(c));
+    if (!validBuild(b)) return b;
+  }
+}
+function makeFighter(b) {
+  const r = ROBOTS[b.robot], P = b.passives.map(id => PASSIVES[id]), M = (b.mods || []).filter(id => MODS[id]).map(id => MODS[id]);
+  const sum = k => P.reduce((t, p) => t + (p[k] || 0), 0) + M.reduce((t, p) => t + (p[k] || 0), 0);
+  const hp = Math.max(30, r.hp + sum('hp'));
+  return { robot: b.robot, hp, maxHp: hp, en: Math.max(0, Math.min(CFG.maxEnergy, r.en + sum('start'))), sc: 0, hand: b.cards.map(id => CARDS[id]), passives: b.passives.slice(), mods: (b.mods || []).slice(), regen: Math.max(0, CFG.regen + sum('regen')), idle: sum('idle'), bonus: Math.max(CFG.bonus, ...P.map(p => p.def || 0)) + M.reduce((t, p) => t + (p.bonus || 0), 0), fury: sum('fury'), edge: sum('edge'), overAdd: sum('overAdd'), takeAtk: sum('takeAtk'), refAdd: sum('refAdd'), leak: sum('leak') };
+}
+function newGame(buildYou, buildFoe) {
+  return { turn: 1, you: makeFighter(buildYou), foe: makeFighter(buildFoe), hist: [], histFoe: [], over: false, result: null, dealt: 0, taken: 0 };
+}
+function applyTurn(g, pc, bc) {
+  const y = g.you, f = g.foe;
+  const r = resolve(pc, bc, y, f);
+  y.en -= pc.cost; f.en -= bc.cost;
+  if (pc.type === 'over') y.sc = 0;
+  if (bc.type === 'over') f.sc = 0;
+  g.taken += Math.min(y.hp, r.toYou); g.dealt += Math.min(f.hp, r.toFoe);
+  y.hp = Math.max(0, y.hp - r.toYou); f.hp = Math.max(0, f.hp - r.toFoe);
+  const good = t => t === 'blocked' || t === 'dodged';
+  r.bonusYou = isDef(pc) && good(r.tagYou) ? y.bonus : 0;
+  r.bonusFoe = isDef(bc) && good(r.tagFoe) ? f.bonus : 0;
+  const sY = (c, mine) => isDef(c) ? good(mine ? r.tagYou : r.tagFoe) : (mine ? r.toFoe : r.toYou) > 0;
+  let setY = 0, setF = 0;
+  if (pc.gain && sY(pc, true)) y.en += pc.gain; if (bc.gain && sY(bc, false)) f.en += bc.gain;
+  if (pc.drain && sY(pc, true)) f.en = Math.max(0, f.en - pc.drain); if (bc.drain && sY(bc, false)) y.en = Math.max(0, y.en - bc.drain);
+  if (pc.missLoss && bc.type === 'guard') y.en = Math.max(0, y.en - pc.missLoss); if (bc.missLoss && pc.type === 'guard') f.en = Math.max(0, f.en - bc.missLoss);
+  if (pc.lockDodge && sY(pc, true)) setF = 2; if (bc.lockDodge && sY(bc, false)) setY = 2;
+  y.en = Math.min(CFG.maxEnergy, y.en + (pc.noRegen ? 0 : y.regen) + r.bonusYou + (r.toYou === 0 && r.toFoe === 0 ? y.idle : 0));
+  f.en = Math.min(CFG.maxEnergy, f.en + (bc.noRegen ? 0 : f.regen) + r.bonusFoe + (r.toYou === 0 && r.toFoe === 0 ? f.idle : 0));
+  const hadY = y.sc, hadF = f.sc;
+  r.scYou = streakDelta(pc, r.toFoe, r.toYou, r.tagYou);
+  r.scFoe = streakDelta(bc, r.toYou, r.toFoe, r.tagFoe);
+  y.sc = r.scYou === 1 ? Math.min(CFG.scMax, y.sc + 1) : r.scYou === -1 ? 0 : y.sc;
+  f.sc = r.scFoe === 1 ? Math.min(CFG.scMax, f.sc + 1) : r.scFoe === -1 ? 0 : f.sc;
+  if (y.leak && y.sc === 3 && hadY < 3) y.hp = Math.max(1, y.hp - y.leak);
+  if (f.leak && f.sc === 3 && hadF < 3) f.hp = Math.max(1, f.hp - f.leak);
+  r.lostYou = r.scYou === -1 && hadY > 0;
+  r.lostFoe = r.scFoe === -1 && hadF > 0;
+  r.fullYou = y.sc === CFG.scMax && hadY < CFG.scMax;
+  r.fullFoe = f.sc === CFG.scMax && hadF < CFG.scMax;
+  if ((y.lockDodge || 0) > 0) y.lockDodge--; if ((f.lockDodge || 0) > 0) f.lockDodge--;
+  if (setY) y.lockDodge = 1; if (setF) f.lockDodge = 1;
+  g.hist.push(pc.type); g.histFoe.push(bc.type);
+  if (y.hp <= 0 || f.hp <= 0 || g.turn >= CFG.maxTurns) {
+    g.over = true;
+    g.result = y.hp > f.hp ? 'win' : y.hp < f.hp ? 'lose' : 'draw';
+  } else {
+    g.turn++;
+    if (g.ev && g.ev.id === 'desgaste') { g.you.hp = Math.max(1, g.you.hp - 7); g.foe.hp = Math.max(1, g.foe.hp - 7); }
+    if (g.ev && --g.ev.left <= 0) evEnd(g);
+    if ((g.evAt || EV_AT).includes(g.turn) && !g.ev) evStart(g, null, g.evNext);
+    else if ((g.evAt || EV_AT).includes(g.turn + 1) && !g.ev) g.evNext = evPick(g, null, g.turn + 1 >= 20);
+  }
+  for (const x of [g.you, g.foe]) { if (x._boost) { x.edge -= x._boost; x._boost = 0; } x.shield = x.immune = false; }
+  return r;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { bossUse, useMod, modWhy, EV_AT, ROBOTS, EVENTS, EV_IDS, evStart, evEnd, MODS, MOD_IDS, passivesOf, applyDifficulty, setPool, DIFFS, DIFF_IDS, CFG, CARDS, OVER, PASSIVES, ROBOTS, CARD_IDS, PASSIVE_IDS, ROBOT_IDS, TYPE_NAME, hit, resolve, streakDelta, can, afford, botPick, validBuild, randomBuild, makeFighter, newGame, applyTurn, statOf };
+}
+
+// ---------- interfaz ----------
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const clone = o => JSON.parse(JSON.stringify(o));
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, RM ? ms * 0.4 : ms));
+
+const ICONS = {
+  attack: '<path d="M5 4 L11 20 M10 4 L16 20 M15 4 L21 20"/>',
+  guard: '<path d="M12 3 L19 6 V12 C19 16.5 16 19.5 12 21 C8 19.5 5 16.5 5 12 V6 Z"/>',
+  dodge: '<path d="M19 5 C11 5 6 9 6 18 M6 18 L2.5 14.5 M6 18 L9.5 14.5"/>',
+  skill: '<path d="M12 2 L14 9 L21 7 L16 12 L21 17 L14 15 L12 22 L10 15 L3 17 L8 12 L3 7 L10 9 Z"/>',
+  over: '<path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"/>'
+};
+const TCOL = { attack: '#ff8a3d', guard: '#4aa3ff', dodge: '#1fb5a8', skill: '#b48aff', over: '#ffd34a' };
+const cardFace = c => '<span class="cico" style="--tc:' + TCOL[c.type] + '">' + icon(c.type) + '</span><b>' + c.name + '</b>';
+const icon = t => '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[t] + '</svg>';
+
+// ---- sonido sintetizado, sin archivos ----
+const AU = {
+  ctx: null, on: true,
+  init() {
+    try {
+      if (!this.ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) this.ctx = new C(); }
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) {}
+  },
+  tone(f0, f1, dur, type, vol, delay) {
+    if (!this.on || !this.ctx) return;
+    try {
+      const t = this.ctx.currentTime + (delay || 0);
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = type || 'sine';
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(this.ctx.destination);
+      o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) {}
+  },
+  noise(dur, vol, freq, delay) {
+    if (!this.on || !this.ctx) return;
+    try {
+      const c = this.ctx, t = c.currentTime + (delay || 0);
+      const n = Math.max(1, Math.floor(c.sampleRate * dur));
+      const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      const s = c.createBufferSource(); s.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+      const g = c.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f); f.connect(g); g.connect(c.destination); s.start(t);
+    } catch (e) {}
+  },
+  pick()   { this.tone(520, 760, .08, 'triangle', .12); },
+  tap()    { this.tone(380, 520, .06, 'triangle', .09); },
+  reveal() { this.noise(.2, .12, 1800); },
+  swing()  { this.noise(.18, .12, 2200); },
+  skill()  { this.tone(200, 900, .32, 'sawtooth', .09); this.noise(.3, .08, 1200); },
+  over()   { this.tone(70, 28, .9, 'sawtooth', .28); this.tone(300, 1300, .45, 'square', .07); this.noise(.7, .22, 350); },
+  hit(d)   { this.tone(170, 45, .26, 'sine', .38); this.noise(.12, .25, 500); if (d >= 35) this.tone(95, 28, .55, 'sawtooth', .18); },
+  block()  { this.tone(900, 520, .14, 'square', .08); this.noise(.06, .16, 3000); },
+  dodge()  { this.noise(.22, .12, 2600); this.tone(420, 940, .16, 'sine', .08); },
+  gain()   { this.tone(600, 820, .1, 'triangle', .1); },
+  ready()  { this.tone(440, 880, .16, 'triangle', .14); this.tone(660, 1320, .22, 'triangle', .14, .12); },
+  ko()     { this.tone(120, 26, .9, 'sine', .4); this.noise(.5, .25, 250); this.tone(70, 30, .7, 'sawtooth', .2, .12); this.noise(.25, .2, 1500, .02); },
+  intro()  { this.noise(.4, .07, 700); this.tone(220, 330, .35, 'sine', .1); this.tone(330, 495, .35, 'sine', .07, .15); },
+  fight()  { this.tone(90, 45, .45, 'sine', .35); this.noise(.12, .1, 1200); [523, 659, 784].forEach(f => this.tone(f, f, .5, 'triangle', .08, .06)); },
+  nav()    { this.tone(300, 440, .05, 'sine', .07); },
+  evt()    { this.tone(520, 380, .2, 'triangle', .12); this.tone(520, 380, .2, 'triangle', .12, .24); },
+  win()    { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, f, .22, 'triangle', .14, i * .14)); },
+  half()   { this.tone(520, 330, .18, 'square', .1); this.tone(390, 230, .3, 'square', .1, .2); this.tone(80, 40, .22, 'sine', .4, .05); this.tone(80, 40, .22, 'sine', .4, .38); },
+  lose()   { this.tone(330, 90, 1, 'sawtooth', .13); }
+};
+try { if (localStorage.getItem('duelo-snd') === '0') AU.on = false; } catch (e) {}
