@@ -1,0 +1,53 @@
+@@ 556 557 1
+:root { --cut: 4px 18px 4px 18px; --hexclip: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+@@ 565 566 1
+.stage .vs { z-index: 1; align-self: center; padding: 0; width: 45px; height: 52px; display: grid; place-items: center; background: var(--panel-2); clip-path: var(--hexclip); color: var(--fg); font-size: 13px; margin: 0 -6px 30px; box-shadow: none; }
+@@ 573 574 1
+.sec-t h3::before { content: ''; width: 11px; height: 13px; background: var(--you); clip-path: var(--hexclip); }
+@@ 597 598 1
+.fx.hex { background: radial-gradient(circle, #3fd9d255, #3fd9d211 60%, transparent 70%); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); filter: drop-shadow(0 0 10px #3fd9d2); animation: hexK .7s ease-out forwards; }
+@@ 622 623 1
+.wheelwrap .hub { width: 45px; height: 52px; margin: -26px 0 0 -22.5px; border: 0; border-radius: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, #ffe58a, #c99a1d); color: #3a2a00; font-size: 20px; box-shadow: none; filter: drop-shadow(0 0 6px #ffd34a); }
+@@ 626 627 1
+.pgin > h2::before { content: ''; display: inline-block; width: 13px; height: 15px; margin-right: 9px; background: var(--you); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); vertical-align: -1px; }
+@@ 637 638 1
+.lg i { width: 12px; height: 14px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+@@ 711 712 1
+.mhx { width: 50px; height: 58px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: color-mix(in srgb, var(--mc) 85%, #000); display: grid; place-items: center; font-size: 21px; color: #07201f; }
+@@ 724 725 1
+.shx { width: 38px; height: 44px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--panel-2); display: grid; place-items: center; color: var(--you); font-size: 17px; font-style: normal; }
+@@ 727 728 1
+.swbtn { width: 33px; height: 38px; border: 0; padding: 0; background: var(--sw, var(--you)); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); cursor: pointer; }
+@@ 742 743 1
+.pk.on .hxp::before { content: ''; position: absolute; inset: 4.6px 4px; clip-path: var(--hexclip); background: var(--panel-2); }
+@@ 955 958 5
+.gtabs.segs button { font-size: 12px; letter-spacing: .01em; padding: 0 2px; }
+.gfil { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 5px; margin: 0 0 10px; }
+.gownbar { display: flex; justify-content: flex-end; margin: 4px 0 -2px; }
+.gfil .fb { height: 32px; min-width: 32px; padding: 0 10px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 4px 10px 4px 10px; background: transparent; color: var(--fg); font: 600 12px var(--font-display); cursor: pointer; }
+.gfil .fb.ic { padding: 0; width: 32px; }
+@@ 960 962 1
+.gfil .fb.rar { margin-left: auto; padding: 0 9px; font-size: 11px; white-space: nowrap; flex: none; }
+@@ 981 982 1
+.seekhex { position: relative; width: 83px; height: 96px; margin: 4px auto 0; }
+@@ 1081 1082 1
+.pity .pp i { width: 12px; height: 14px; clip-path: var(--hexclip); background: var(--line); }
+@@ 1129 1130 3
+.iv { min-width: 0; }
+.iv small { max-width: 100%; font-size: 9.5px; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; line-height: 1.2; hyphens: manual; }
+@media (max-width: 380px) { .iv small { font-size: 8.5px; letter-spacing: 0; } }
+@@ 1190 1190 1
+    <div class="gownbar" id="gOwnBar"></div>
+@@ 1255 1256 1
+    <p class="hxver"><span class="rec"></span> · v10.4</p>
+@@ 1304 1305 1
+    <p class="ver">Litopulso · v10.4</p>
+@@ 2347 2348 2
+    '';
+  $('#gOwnBar').innerHTML = '<button class="swt' + (gOwn ? ' on' : '') + '" data-own="1" role="switch" aria-checked="' + gOwn + '"><i></i><span>Solo mías</span></button>';
+@@ 2399 2399 1
+$('#gOwnBar').addEventListener('click', e => { if (!e.target.closest('.swt')) return; AU.tap(); gOwn = !gOwn; renderGarage(); });
+@@ 3878 3879 1
+  el.innerHTML = '<div class="ivg">' + cell('es', iv.est, 'Estabili&shy;zadores') + cell('xp', iv.xpb, 'Duelos con XP ×2') + cell('ch', iv.chat, 'Chatarra') + cell('re', nre + '/' + REACTS.length, 'Reacciones') + '</div>' +
+@@ 3891 3892 1
+  $('#gElPick').innerHTML = ELEM_IDS.filter(e => !gOwn || cr[e] > 0).map(e => { const own = cr[e] > 0, on = gElSel === e; return '<button class="elc' + (on ? ' on' : '') + (own ? '' : ' lk') + '" data-el="' + e + '" style="--ec:' + ELEMS[e].c + '" aria-pressed="' + on + '"' + (own ? '' : ' aria-label="' + ELEMS[e].n + ' (bloqueado)"') + '>' + eIco(e) + '<b>' + ELEMS[e].n + '</b></button>'; }).join('');
