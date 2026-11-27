@@ -1,0 +1,338 @@
+@@ 850 850 71
+  .p1 .drone, .p2 .box, .p3 .bra { animation: none !important; transform: none; opacity: 1; }
+  .ringmap .you .pl, .seekhex i, .rem.ready { animation: none; }
+}
+/* v10: ruleta de cristales, ítems, reacciones y mejoras */
+.spinrow { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+.spinrow .btn { margin: 0; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; line-height: 1.1; }
+.spinrow .btn small { font: 600 11px var(--font-body); letter-spacing: 0; text-transform: none; opacity: .75; }
+#spinBtn { font-size: 19px; letter-spacing: .16em; }
+#spin5Btn { font-size: 14px; letter-spacing: .08em; border-color: #ffd34a88; color: #ffd34a; }
+.pity { display: flex; align-items: center; gap: 10px; justify-content: center; margin: -2px 0 10px; font-size: 12px; color: var(--muted); }
+.pity span { font: 700 11px var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: #ffd34a; }
+.pity .pp { display: flex; gap: 4px; }
+.pity .pp i { width: 12px; height: 13px; clip-path: var(--hexclip); background: var(--line); }
+.pity .pp i.f { background: #ffd34a; }
+.odds { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--cut); background: var(--panel); }
+.odds summary { list-style: none; cursor: pointer; padding: 12px 14px; font: 700 13px var(--font-display); letter-spacing: .06em; display: flex; justify-content: space-between; }
+.odds summary::-webkit-details-marker { display: none; }
+.odds summary::after { content: '+'; color: var(--muted); }
+.odds[open] summary::after { content: '−'; }
+.odds #colMis { padding: 0 14px 12px; }
+.wheelwrap { width: 290px; }
+.wheelwrap .cry { filter: drop-shadow(0 0 0 transparent); }
+.wheelwrap.spinning .cry { filter: brightness(1.15); }
+.wheelwrap.bump svg { animation: wbump .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes wbump { 30% { transform: scale(1.04); } }
+.wsparks { position: absolute; left: 50%; top: 4%; width: 0; height: 0; pointer-events: none; z-index: 3; }
+.wsparks i { position: absolute; width: 7px; height: 8px; margin: -4px; clip-path: var(--hexclip); background: var(--wg, #ffd34a); box-shadow: 0 0 6px var(--wg, #ffd34a); animation: wsp var(--t, .7s) ease-out forwards; transform: rotate(var(--a)) translateY(0); }
+@keyframes wsp { to { transform: rotate(var(--a)) translateY(calc(-1 * var(--d, 80px))); opacity: 0; } }
+.prizepop .p5 { display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow-y: auto; }
+.prizepop .p5 .prize { flex-direction: row; text-align: left; padding: 10px 12px; font-size: 13px; animation: ppPop .4s cubic-bezier(.2,1.4,.4,1) backwards; }
+.prizepop .p5 .prize:nth-child(2) { animation-delay: .12s; } .prizepop .p5 .prize:nth-child(3) { animation-delay: .24s; } .prizepop .p5 .prize:nth-child(4) { animation-delay: .36s; } .prizepop .p5 .prize:nth-child(5) { animation-delay: .48s; }
+.prizepop .p5 .prize .ptile, .prizepop .p5 .prize .ptile svg, .prizepop .p5 .prize .ptile .sw2, .prizepop .p5 .prize .ptile .fr { width: 40px; height: 40px; }
+.prizepop .p5 .prize .big { font-size: 24px; min-width: 48px; }
+.r-x { --rc: #ff7a3a; }
+.ct.r-x { box-shadow: 0 0 0 1px #ff7a3a inset; }
+.remlist { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.remlist li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px 12px 4px 12px; background: var(--panel-2); color: var(--fg); font-size: 13.5px; animation: viewIn .35s var(--d, 0s) ease-out backwards; }
+.remlist svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--rc, #ffd34a); stroke-width: 1.8; stroke-linejoin: round; }
+#remS { width: 100%; }
+.remgem.rainbow polygon { stroke: #fff; animation: rbg 2s linear infinite; }
+@keyframes rbg { 0% { fill: #ff7a3a55; filter: drop-shadow(0 0 14px #ff7a3a); } 33% { fill: #8ee26b55; filter: drop-shadow(0 0 14px #8ee26b); } 66% { fill: #5a8cff55; filter: drop-shadow(0 0 14px #5a8cff); } 100% { fill: #c08bff55; filter: drop-shadow(0 0 14px #c08bff); } }
+.rem.rbw { border-color: #c08bff; }
+.rem.rbw svg polygon { animation: rbg 2.4s linear infinite; }
+.rest { margin: 0; font-size: 12px; color: var(--muted); }
+.rest b { color: var(--fg); }
+.gup { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.guph { display: flex; justify-content: space-between; align-items: baseline; }
+.guph b { font: 700 14px var(--font-display); }
+.guph span { font-size: 12px; color: var(--muted); }
+.guph em { font-style: normal; color: var(--fg); font-weight: 700; }
+.upr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px 12px 4px 12px; background: var(--panel); }
+.upr div { display: flex; flex-direction: column; min-width: 0; }
+.upr b { font: 700 13px var(--font-display); }
+.upr small { font-size: 11.5px; color: var(--muted); }
+.upr .chipbtn { flex: none; color: #ffd34a; border-color: #ffd34a66; }
+.upr .chipbtn:disabled { opacity: .4; }
+.ivg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.iv { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border: 1px solid var(--line); border-radius: var(--cut); background: var(--panel); text-align: center; }
+.iv svg { width: 20px; height: 20px; fill: none; stroke: var(--you); stroke-width: 1.8; stroke-linejoin: round; }
+.iv b { font: 700 17px var(--font-display); }
+.iv small { font-size: 9.5px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; line-height: 1.2; }
+.rel { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.emi { padding: 6px 10px; border: 1px solid var(--rc, var(--line)); border-radius: 4px 12px 4px 12px; background: var(--panel-2); color: var(--fg); font: 600 12.5px var(--font-display); }
+.emi.r-g { --rc: #6c7a8b; } .emi.r-b { --rc: #5a8cff; } .emi.r-r { --rc: #f0475a; }
+.emi.lk { opacity: .35; border-style: dashed; }
+.icon-btn.emob svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.emopan { position: fixed; z-index: 35; top: calc(64px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); max-width: 260px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; padding: 10px; border: 1px solid var(--line); border-radius: 4px 16px 4px 16px; background: var(--panel); box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: viewIn .2s ease-out; }
+.emopan .emi { cursor: pointer; }
+.emoflt { position: fixed; z-index: 36; transform: translate(-50%, 0); padding: 8px 12px; border: 2px solid var(--rc, #6c7a8b); border-radius: 14px; background: #f4f7fb; color: #121821; font: 700 14px var(--font-display); white-space: nowrap; pointer-events: none; animation: emoIn 2.6s ease-out forwards; }
+.emoflt.r-g { --rc: #6c7a8b; } .emoflt.r-b { --rc: #5a8cff; } .emoflt.r-r { --rc: #f0475a; }
+@keyframes emoIn { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.7); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 16% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -12px); } }
+@@ 854 865 32
+<div class="page" id="pgGar"><div class="pgin garage">
+    <div class="gtop">
+      <h2>Garaje</h2>
+      <button class="chipbtn" id="gRandom">Aleatorio</button>
+    </div>
+    <div class="ghero">
+      <div class="gbig" id="gRobots"></div>
+      <div class="rb" id="gRobotInfo"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t"><h3>Mi mano</h3><span class="count" id="hCount"></span></div>
+      <div class="hnd" id="gHand"></div>
+      <div class="gequip" id="gEquip"></div>
+    </div>
+    <div class="gtabs segs" id="gTabs"></div>
+    <div class="sec" id="sCards">
+      <div class="gfil" id="gFil"></div>
+      <div class="cgrid" id="gCards"></div>
+      <div class="detail" id="gDetail"></div>
+    </div>
+    <div class="sec" id="sPass" hidden>
+      <div class="sec-t"><h3>Pasivas de tu robot</h3><span class="count" id="pCount"></span></div>
+      <div class="pgrid" id="gPass"></div>
+    </div>
+    <div class="sec" id="sMods" hidden>
+      <div class="sec-t"><h3>Módulos · 1 uso por duelo</h3><span class="count" id="mCount"></span></div>
+      <div class="mslots" id="gModSlots"></div>
+      <div class="pgrid" id="gMods"></div>
+      <div class="gup" id="gUp"></div>
+    </div>
+    <p class="status" id="gStatus"></p>
+    <button id="gBack" hidden></button><button id="gPlay" hidden></button>
+@@ 866 871 20
+<div class="page" id="pgRec"><div class="pgin">
+    <h2>Recompensas</h2>
+    <div class="segs" id="recTabs" role="tablist" aria-label="Recompensas"><button role="tab" data-rt="rul" aria-selected="true">Ruleta</button><button role="tab" data-rt="mis" aria-selected="false">Misiones</button><button role="tab" data-rt="mer" aria-selected="false">Mercado</button></div>
+    <div id="recRul">
+      <div id="colHead"></div>
+      <div class="wheelwrap"><i class="ptr"></i><svg id="wheel" viewBox="-138 -138 276 276" aria-hidden="true"></svg><span class="hub">✦</span><div class="wsparks" id="wSparks"></div></div>
+      <div class="pity" id="pity"></div>
+      <div class="spinrow"><button class="btn gold" id="spinBtn">Girar</button><button class="btn ghost" id="spin5Btn">Girar ×5</button></div>
+      <button class="btn-link" id="fragBtn" hidden>Cambiar 10 fragmentos por 1 giro</button>
+      <details class="odds"><summary>Ver probabilidades</summary><div id="colMis"></div></details>
+    </div>
+    <div id="recMis" hidden>
+      <div id="misTop" class="rstats"></div>
+      <div id="misList"></div>
+      <button class="btn ghost" id="openColl">Ir a la ruleta</button>
+    </div>
+    <div id="recMer" hidden>
+      <p class="sub" id="merHead"></p>
+      <div class="cgrid" id="merList"></div>
+    </div>
+@@ 872 877 8
+<div class="page" id="pgHome"><div class="pgin hexx">
+    <div class="hxtop">
+      <button class="hxme" id="hxMe" aria-label="Mi perfil"><span id="hxAv"></span><span class="hxid"><b id="hxName"></b><small id="hxLv"></small></span></button>
+      <div class="hxres">
+        <span class="rchip" id="hxPulse" aria-label="Pulso"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><b></b></span>
+        <span class="rchip tk" id="hxTk" aria-label="Tickets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 0 0 0 8v3h18v-3a2 2 0 0 0 0-8V5H3z"/></svg><b></b></span>
+        <button class="gear" id="gearBtn" aria-label="Configuración"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
+      </div>
+@@ 878 883 6
+    <div class="cyc"><span id="cycName"></span><span id="cycLeft"></span></div>
+    <div class="ringmap" id="ringMap"></div>
+    <section class="ringcard" id="ringCard"></section>
+    <div class="hxact">
+      <button class="teamb" id="teamBtn" aria-label="Editar mi equipo"><span id="teamRob"></span><small>Equipo</small></button>
+      <button class="seekb" id="seekBtn"><b>BUSCAR RIVAL</b><small>En línea · rival al azar</small></button>
+@@ 884 890 21
+    <section class="rems">
+      <div class="remh"><b>Remanentes</b><small>Se estabilizan aunque no juegues</small></div>
+      <div class="remgrid" id="remGrid"></div>
+    </section>
+    <p class="hxver"><span class="rec"></span> · v10.0</p>
+</div></div>
+<div class="page" id="pgEnt"><div class="pgin">
+    <h2>Entrenamiento</h2>
+    <p class="sub">Practica sin arriesgar tu Pulso.</p>
+    <section class="tcard">
+      <span class="eyb">HISTORIA</span>
+      <div id="hisList"></div>
+      <button class="btn ghost" id="bossBtn">Combatir al jefe</button>
+    </section>
+    <section class="tcard">
+      <span class="eyb">DUELO CONTRA EL BOT</span>
+      <div class="diff" id="diffRow" role="radiogroup" aria-label="Dificultad del rival"></div>
+      <p class="diff-t" id="diffText"></p>
+      <span class="lab">Arena</span>
+      <div class="arrow" id="arenaRow" role="radiogroup" aria-label="Arena"></div>
+      <p class="diff-t" id="arenaText"></p>
+@@ 891 901 6
+    </section>
+    <section class="tcard">
+      <span class="eyb">RETA A UN AMIGO</span>
+      <p class="sub">Sala privada con código, cada quien en su teléfono. No cambia tu Pulso.</p>
+      <div class="two"><button class="btn ghost" id="nearbyBtn">Crear sala</button><button class="btn ghost" id="joinBtn">Tengo un código</button></div>
+    </section>
+@@ 903 904 1
+    <div class="ph2"><h2>Mi perfil</h2><button class="gear" id="gearBtn2" aria-label="Configuración"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button></div>
+@@ 906 907 5
+    <h3 class="rh">En el Hexx</h3>
+    <div id="profHx" class="pstats"></div>
+    <h3 class="rh">Inventario</h3>
+    <div id="profInv"></div>
+    <h3 class="rh">Récord contra el bot</h3>
+@@ 915 916 1
+    <div class="ph2"><button class="gear" id="ajBack" aria-label="Volver a mi perfil"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Configuración</h2><span></span></div>
+@@ 919 921 0
+@@ 923 925 2
+    <button class="setrow link" id="replayTut2"><i class="shx">↻</i><div class="stx"><b>Repetir el tutorial</b><small>El duelo guiado del principio</small></div><span class="go">›</span></button>
+    <p class="ver">Litopulso · v10.0</p>
+@@ 927 927 7
+<nav class="tabbar" id="tabbar" aria-label="Secciones">
+  <button data-go="gar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><em>Garaje</em></button>
+  <button data-go="rec"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M3 12h18M12 8v13M12 8c-2-4-6-4-6-1.5S10 8 12 8c2 0 6 1 6-1.5S14 4 12 8"/></svg><em>Recompensas</em><i class="bdg" id="tkBadge" hidden></i></button>
+  <button data-go="home" class="mid"><span class="hexb"><svg viewBox="-30 -30 60 60" aria-hidden="true"><polygon class="o" points="0,-27 23.4,-13.5 23.4,13.5 0,27 -23.4,13.5 -23.4,-13.5"/><polygon class="i" points="0,-11 9.5,-5.5 9.5,5.5 0,11 -9.5,5.5 -9.5,-5.5"/></svg></span><em>Hexx</em></button>
+  <button data-go="ent"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><em>Entrenar</em></button>
+  <button data-go="prof"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><em>Perfil</em></button>
+</nav>
+@@ 929 935 11
+<section class="view" id="garageView" hidden></section>
+
+<div class="sheet" id="seek" hidden>
+  <div class="sheet-card seekcard" role="dialog" aria-label="Buscando rival">
+    <div class="seekhex" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h2 id="seekT">Buscando rival</h2>
+    <p class="sub" id="seekS"></p>
+    <p class="seekclk" id="seekClk">0:00</p>
+    <div id="seekBot" hidden>
+      <p class="sub">No hay nadie conectado cerca de tu anillo. Contra el bot ganas menos Pulso (+12 / −8).</p>
+      <button class="btn" id="seekBotBtn">Jugar contra el bot</button>
+@@ 936 965 1
+    <button class="btn ghost" id="seekCancel">Cancelar</button>
+@@ 966 967 13
+</div>
+
+<div class="sheet" id="remSheet" hidden>
+  <div class="sheet-card remcard" role="dialog" aria-label="Remanente">
+    <div class="remgem" id="remGem" aria-hidden="true"></div>
+    <h2 id="remT"></h2>
+    <p class="sub" id="remS"></p>
+    <button class="btn" id="remOk">Listo</button>
+  </div>
+</div>
+
+<div class="prizepop" id="prizePop" hidden><div class="ppin" id="prizeIn"></div><button class="btn" id="prizeOk">Genial</button></div>
+
+@@ 977 977 1
+        <button class="icon-btn emob" id="emoBtn" aria-label="Mandar reacción" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
+@@ 986 986 1
+      <div class="emopan" id="emoPan" hidden></div>
+@@ 1169 1169 3
+const modLv = (f, id) => Math.min(3, Math.max(1, (f && f.mlv && f.mlv[id]) | 0 || 1));
+const modCH = (f, id) => Math.round((MODS[id].costHp || 0) * [1, .75, .5][modLv(f, id) - 1]);
+const modCE = (f, id) => Math.max(0, (MODS[id].costEn || 0) - (modLv(f, id) - 1));
+@@ 1173 1175 3
+  const cH = modCH(f, id), cE = modCE(f, id);
+  if (cH && f.hp <= cH) return 'Poca vida';
+  if (cE) { const mc = Math.min(...f.hand.filter(c => c.type !== 'over' && !dLock(f, c) && !(f.locked && f.locked.includes(c.id))).map(c => c.cost)); if (f.en - cE < mc) return 'Poca energía'; }
+@@ 1183 1185 3
+  const cH = modCH(f, id), cE = modCE(f, id);
+  if (cH) f.hp -= cH;
+  if (cE) f.en -= cE;
+@@ 1694 1695 2
+  const SH = { easy: 'Se equivoca seguido.', normal: 'A veces te lee la jugada.', hard: 'Aprende cómo juegas.' };
+  $('#diffText').innerHTML = SH[diff] + ' Ganas <b>' + xt.win + ' XP</b>.';
+@@ 1698 1708 4
+// ---- globitos del asistente (primera vez en cada pantalla) ----
+const TUT_KEYS = { mods: 'duelo-tut-mods', modduel: 'duelo-tut-modduel', arenanew: 'duelo-tut-arenanew', tip_home: 'lito-tip-home', tip_gar: 'lito-tip-gar', tip_rec: 'lito-tip-rec', tip_ent: 'lito-tip-ent', tip_prof: 'lito-tip-prof', tip_rem: 'lito-tip-rem' };
+const TUT_MODS = [
+  { t: 'Módulos: piezas para tu robot. Cada una es un botón de 1 uso por duelo con un efecto y un costo. Las consigues en la ruleta y venciendo jefes.', sel: '#gModSlots', pos: 'bot', scroll: 'start' }
+@@ 1709 1735 15
+const TUT_MODDUEL = [{ t: 'Tus módulos aparecen aquí. Cada uno se usa una vez por duelo y no gasta tu turno.', sel: '#modRow', pos: 'top' }];
+const TUT_ARENANEW = [{ t: '¡Arena nueva! Elígela aquí: cada arena cambia una regla del duelo.', sel: '#arenaRow', pos: 'top' }];
+const TIPS = {
+  home: [{ t: 'Este es el Hexx. Gana duelos en línea para juntar Pulso y avanzar hacia el centro. Cada anillo cambia una regla.', sel: '#ringCard', pos: 'top' }],
+  gar: [{ t: 'Aquí armas tu equipo: robot, cartas y pasivas. Toca una carta para ponerla o quitarla. Se guarda solo.', sel: '#gHand', pos: 'bot' }],
+  rec: [{ t: 'Con tickets giras la ruleta. Los ganas con misiones y abriendo remanentes.', sel: '#spinBtn', pos: 'top' }],
+  ent: [{ t: 'Aquí practicas contra el bot y avanzas en la Historia. Nada de esto cambia tu Pulso.', sel: '#hisList', pos: 'bot' }],
+  prof: [{ t: 'Tu perfil: tu ID, tus récords y tu colección. El engrane abre la configuración.', sel: '#gearBtn2', pos: 'bot' }],
+  rem: [{ t: '¡Ganaste un remanente! Se estabiliza con el tiempo, aunque cierres la app. Cuando diga LISTO, tócalo.', sel: '#remGrid', pos: 'top' }]
+};
+function tipFor(n) {
+  if (!TIPS[n] || GUIDE.on || INTRO.on) return;
+  const pg = n === 'rem' ? 'home' : n;
+  setTimeout(() => { if (curPage === pg && curView === 'home' && $('#tut').hidden && !GUIDE.on && !INTRO.on) runTut(TIPS[n], 'tip_' + n); }, 500);
+}
+@@ 1865 1877 3
+  setColor(build.robot);
+  if (typeof hxRender === 'function') hxRender();
+  renderRec(); updateBadge();
+@@ 1882 1883 1
+function openGarage() { goPage('gar'); }
+@@ 1890 1891 1
+  $('#gRobots').innerHTML = '<div class="gbr">' + infoTile('robot', draft.robot) + '<span class="mini" style="--c:' + ROBOTS[draft.robot].color + '">' + robotSVG(draft.robot) + '</span></div><div class="gsw" role="radiogroup" aria-label="Robot">' + ROBOT_IDS.map(id => {
+@@ 1892 1894 2
+    return '<button class="pk' + (on ? ' on' : '') + '" role="radio" data-robot="' + id + '" aria-checked="' + on + '" aria-label="' + r.name + '" style="--c:' + r.color + '"><i></i></button>';
+  }).join('') + '</div>';
+@@ 1898 1899 1
+  const FT = [['', 'Todas'], ['attack', 'Ataque'], ['guard', 'Defensa'], ['dodge', 'Desvío'], ['skill', 'Habilidad']], FRN = { '': 'Rareza: todas', g: 'Rareza: gris', b: 'Rareza: azul', r: 'Rareza: roja' };
+@@ 1900 1901 3
+  $('#gFil').innerHTML = FT.map(([v, n]) => '<button class="fb' + (gF.t === v ? ' on' : '') + (v ? ' ic' : '') + '" data-k="t" data-v="' + v + '" aria-pressed="' + (gF.t === v) + '"' + (v ? ' aria-label="' + n + '" style="--tc:' + TCOL[v] + '">' + icon(v) : '>' + n) + '</button>').join('') +
+    '<button class="fb rar" data-k="r" data-v="' + ({ '': 'g', g: 'b', b: 'r', r: '' })[gF.r] + '">' + FRN[gF.r] + '</button>' +
+    (gTab === 'pass' ? '' : '<button class="swt' + (gOwn ? ' on' : '') + '" data-own="1" role="switch" aria-checked="' + gOwn + '"><i></i><span>Solo mías</span></button>');
+@@ 1915 1916 2
+      const lv = (col.mlv && col.mlv[id]) || 1;
+      return '<button class="ptile mt r-' + m.r + (on ? ' on' : '') + (have ? '' : ' lock') + '" data-mod="' + id + '" aria-pressed="' + on + '"><b>' + m.name + '</b><em>' + PN[m.part] + (have && lv > 1 ? ' · Nv ' + lv : '') + '</em><small>+ ' + m.pro + '</small><small class="con">− ' + m.con + '</small>' + (have ? '' : '<span class="lkt">Ruleta</span>') + '</button>';
+@@ 1917 1918 4
+    $('#mCount').textContent = ms.length + '/' + (1 + slots);
+    if (typeof renderUp === 'function') renderUp();
+    $('#gEquip').innerHTML = Array.from({ length: CFG.passiveSlots }, (_, i) => { const id = draft.passives[i]; return '<button class="eq' + (id ? '' : ' free') + '" data-eq="pass"><small>Pasiva</small><b>' + (id ? PASSIVES[id].name : 'Libre') + '</b></button>'; }).join('') +
+      '<button class="eq' + (ms.length ? '' : ' free') + '" data-eq="mods"><small>Módulo' + (ms.length > 1 ? 's' : '') + '</small><b>' + (ms.length ? ms.map(i => MODS[i].name).join(' · ') : 'Libre') + '</b></button>'; }
+@@ 1920 1921 1
+    $('#gTabs').innerHTML = T.map(([k, n]) => '<button role="tab" aria-selected="' + (gTab === k) + '" data-gt="' + k + '">' + n + '</button>').join('');
+@@ 1926 1927 1
+  const cc = $('#hCount'), pc = $('#pCount');
+@@ 1932 1932 1
+  st.hidden = !garageNote && !err;
+@@ 1945 1947 3
+$('#gTabs').addEventListener('click', e => { const t = e.target.closest('[data-gt]'); if (!t) return; AU.tap(); gTab = t.dataset.gt; renderGarage(); if (gTab === 'mods') setTimeout(() => runTut(TUT_MODS, 'mods'), 200); });
+$('#gFil').addEventListener('click', e => { const t = e.target.closest('.fb,.swt'); if (!t) return; AU.tap(); if (t.dataset.own) gOwn = !gOwn; else gF[t.dataset.k] = t.dataset.v; renderGarage(); });
+$('#gEquip').addEventListener('click', e => { const t = e.target.closest('[data-eq]'); if (!t) return; AU.tap(); gTab = t.dataset.eq; renderGarage(); try { $('#gTabs').scrollIntoView({ block: 'start', behavior: RM ? 'auto' : 'smooth' }); } catch (x) {} });
+@@ 2153 2153 1
+  if (GUIDE.on) guideStep();
+@@ 2158 2159 2
+  if (GUIDE.on && !guideOk(card)) { guideNudge(); return; }
+  busy = true; if (GUIDE.on) guideHide();
+@@ 2168 2169 1
+  else { bc = GUIDE.on ? guideFoe() : G.foePre || botPick(G.foe, G.hist, Math.random, HXBOT ? 'normal' : diff, G.you); G.foePre = null; }
+@@ 2232 2232 12
+function addXp(gain) {
+  const before = levelOf(xp);
+  xp += gain; saveXp();
+  const after = levelOf(xp);
+  if (after.level <= before.level) return '';
+  const news = CARD_IDS.filter(id => cardLevel(id) > before.level && cardLevel(id) <= after.level).map(id => CARDS[id].name);
+  applyProgress();
+  while (build.cards.length < CFG.handSize) { const nx = CARD_IDS.find(id => cardLevel(id) <= after.level && !build.cards.includes(id)); if (!nx) break; build.cards.push(nx); }
+  build.cards.sort(byOrder); saveBuild();
+  setTimeout(() => AU.ready(), 500);
+  return '<b>¡Nivel ' + after.level + '!</b>' + (news.length ? '<div class="lvc">' + news.map(n => '<span>' + n + '</span>').join('') + '</div><small>Carta' + (news.length > 1 ? 's' : '') + ' nueva' + (news.length > 1 ? 's' : '') + '</small>' : '') + '<small>+1 punto de habilidad para el Mercado · ' + (after.level >= MAX_LEVEL ? 'tu núcleo ahora es plateado' : 'tu núcleo se oscurece un tono') + '</small>';
+}
+@@ 2234 2235 2
+  if (GUIDE.on) return guideEnd();
+  $('.xpbox .xpbar').hidden = false; $('#endGarage').hidden = false; $('#again').disabled = false; $('#again').textContent = HXBOT ? 'Buscar otro rival' : 'Revancha'; $('#endHome').textContent = HXBOT ? 'Volver al Hexx' : 'Inicio';
+@@ 2237 2238 1
+  if (!HXBOT) { recD[diff][G.result === 'win' ? 'w' : G.result === 'draw' ? 'd' : 'l']++; saveRecD(); }
+@@ 2239 2240 1
+  const gain = xpBoost(XP_TABLE[HXBOT ? 'normal' : diff][G.result]);
+@@ 2241 2242 1
+  const lvlHTML = addXp(gain);
+@@ 2243 2253 2
+  let note = '+' + gain + ' XP' + (XPB_LAST ? ' (Cristal ×2)' : '');
+  note += HXBOT ? hxNote(hxGain(G.result, 0, true)) : colProgress(diff, G.result, build.robot, G.you.hp);
+@@ 2289 2290 1
+    if (k === 2 || k === 6) f.edge = (f.edge || 0) + 3;
+@@ 2293 2294 1
+  if (k === 5 || k === 6) g.evAt = [5, 10, 15, 20, 25];
+@@ 2295 2295 1
+function arenaInfo(k) { return k >= 6 ? { n: 'El Hexx', r: 'Golpes +3 y eventos cada 5 turnos.' } : ARENAS[Math.max(1, k) - 1]; }
+@@ 2297 2298 1
+  $('#arenaRow').innerHTML = ARENAS.map((a, i) => { const k = i + 1, ok = arenaOpen(k); return '<button role="radio" aria-checked="' + (k === selArena) + '" class="' + (k === selArena ? 'on' : '') + (ok ? '' : ' lk') + '" data-ar="' + k + '" aria-label="' + a.n + (ok ? '' : ' (bloqueada)') + '">' + a.n + '</button>'; }).join('');
+@@ 2299 2300 1
+  $('#arenaText').textContent = A.r;
