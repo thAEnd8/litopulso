@@ -1,7 +1,7 @@
 {
   "name": "litopulso",
   "private": true,
-  "version": "10.2.0",
+  "version": "10.3.0",
   "description": "Litopulso: prototipo HTML empaquetado como app de Android",
   "dependencies": {
     "@capacitor/android": "6.2.4",
