@@ -1,0 +1,302 @@
+$('#bossBtn').addEventListener('click', () => { if ((col.st | 0) >= 5) { forceBoss = true; startDuel(); } });
+async function startDuel() {
+  if (!PVP.on && validBuild(build)) { openGarage(); return; }
+  AU.init(); AU.ready();
+  const tok = ++duelToken;
+  setColor(build.robot);
+  foeBuild = PVP.on ? PVP.opp.b : randomBuild();
+  halfShown = { you: false, foe: false }; halfNote = { you: false, foe: false };
+  isBoss = !PVP.on && forceBoss && (col.st | 0) >= 5; forceBoss = false;
+  const ch = chapNow();
+  if (isBoss) foeBuild.mods = ['m_anc', 'm_reac', 's_' + foeBuild.robot].concat(['m_blind', 'm_antena', 'm_nuc'].slice(0, Math.min(ch - 1, 3)));
+  arenaK = PVP.on ? PVP.arena : isBoss ? ch : selArena;
+  G = PVP.on ? newGame(PVP.myB, foeBuild) : applyDifficulty(newGame(build, foeBuild), diff);
+  if (PVP.on) {
+    G.rng = mulberry(PVP.seed);
+    const rH = mulberry(PVP.seed ^ 0x9e3779b9), rG = mulberry(PVP.seed ^ 0x85ebca6b);
+    G.you.rng = PVP.role === 'h' ? rH : rG; G.foe.rng = PVP.role === 'h' ? rG : rH;
+  }
+  if (isBoss) { G.foe.maxHp = Math.round(G.foe.maxHp * (1.1 + 0.1 * ch)); G.foe.hp = G.foe.maxHp; G.foe.edge = (G.foe.edge || 0) + Math.ceil(ch / 2); }
+  applyArena(G, arenaK);
+  { const bt = document.querySelector('.arena.battle'); bt.className = 'arena battle ar' + arenaK; }
+  busy = true;
+  $('#end').hidden = true; $('#rules').hidden = true; $('#ko').hidden = true;
+  show('duel');
+  $('#foe').innerHTML = fighterStats('foe', G.foe, PVP.on ? PVP.opp.name : isBoss ? 'JEFE ' + ch : 'Rival ' + DIFFS[diff].name);
+  $('#you').innerHTML = fighterStats('you', G.you, 'Tú');
+  $('#stageFoe').innerHTML = fighterRob('foe', G.foe); $('#stageYou').innerHTML = fighterRob('you', G.you);
+  $('#hand').classList.remove('deal');
+  $('#hand').style.gridTemplateColumns = 'repeat(' + G.you.hand.length + ', minmax(0, 1fr))';
+  drawHand();
+  render();
+  setSlot($('#slotFoe'), 'back', '?');
+  setSlot($('#slotYou'), 'empty', 'Elige');
+  $('#msg').textContent = arenaK > 1 ? 'Arena: ' + ARENAS[arenaK - 1].n + '. ' + ARENAS[arenaK - 1].r : '';
+  { const iy = $('#introYou'); iy.textContent = pname; const sm = document.createElement('small'); sm.textContent = ROBOTS[build.robot].name; iy.appendChild(sm); }
+  if (PVP.on) { const fo = $('#introFoe'); fo.textContent = PVP.opp.name; const sm = document.createElement('small'); sm.textContent = ROBOTS[foeBuild.robot].name; fo.appendChild(sm); }
+  else $('#introFoe').textContent = ROBOTS[foeBuild.robot].name;
+  const el = $('#intro');
+  el.hidden = false; el.classList.remove('go', 'fight'); void el.offsetWidth; AU.intro();
+  if (!(await wait(2000, tok))) return;
+  el.classList.add('fight'); AU.fight(); buzz([60, 30, 90]);
+  if (!(await wait(1100, tok))) return;
+  el.hidden = true; el.classList.remove('fight');
+  void $('#hand').offsetWidth;
+  $('#hand').classList.add('deal');
+  AU.reveal();
+  if (!PVP.on) await runTut(TUT_DUEL, 'duel');
+  if (!PVP.on && tok === duelToken && (G.you.mods || []).length) await runTut(TUT_MODDUEL, 'modduel');
+  if (tok !== duelToken) return;
+  startTurn();
+}
+
+function showLog() {
+  const l = G && G.log || [];
+  $('#logList').innerHTML = l.length ? l.slice().reverse().map(x => '<li><b>T' + x.t + '</b><span>Tú <em>' + x.y + '</em>' + (x.dy ? ' · hiciste ' + x.dy : '') + '</span><span>Rival <em>' + x.f + '</em>' + (x.df ? ' · te hizo ' + x.df : '') + '</span>' + (x.ev ? '<i>⚡ ' + x.ev + '</i>' : '') + '</li>').join('') : '<li>Aún no hay movimientos.</li>';
+  $('#logPanel').hidden = false;
+}
+$('#logBtn').addEventListener('click', showLog);
+$('#logClose').addEventListener('click', () => { $('#logPanel').hidden = true; });
+$('#hand').addEventListener('click', e => { const c = e.target.closest('.card'); if (c && G) play(G.you.hand[+c.dataset.i]); });
+$('#overBtn').addEventListener('click', () => { if (G) play(OVER); });
+$('#quitBtn').addEventListener('click', () => { duelToken++; tutEnd(); busy = false; $('#end').hidden = true; pvpLeave(); show('home'); });
+
+// ---- botones generales ----
+$('#playBtn').addEventListener('click', startDuel);
+$('#buildCard').addEventListener('click', () => { AU.tap(); openGarage(); });
+$$('.helpBtn').forEach(b => b.addEventListener('click', () => { AU.tap(); $('#rules').hidden = false; $('#closeRules').focus(); }));
+$('#lvlUp').addEventListener('click', () => {
+  const L = levelOf(xp); if (L.level >= MAX_LEVEL) return;
+  xp += L.need - L.into; saveXp(); applyProgress();
+  while (build.cards.length < CFG.handSize) { const nx = CARD_IDS.find(id => cardLevel(id) <= levelOf(xp).level && !build.cards.includes(id)); if (!nx) break; build.cards.push(nx); }
+  build.cards.sort(byOrder); saveBuild(); setColor(build.robot);
+  $('#lvlUp').textContent = 'Ahora eres nivel ' + levelOf(xp).level;
+  setTimeout(() => { $('#lvlUp').textContent = 'Prueba: subir un nivel'; }, 2000);
+  if (curView === 'home') renderHome();
+});
+let resetArmed = false;
+$('#lvlReset').addEventListener('click', () => {
+  if (!resetArmed) { resetArmed = true; $('#lvlReset').textContent = 'Toca otra vez para confirmar'; setTimeout(() => { resetArmed = false; $('#lvlReset').textContent = 'Prueba: reiniciar progreso'; }, 3000); return; }
+  resetArmed = false; xp = 0; saveXp(); applyProgress(); build = defaultBuild(); saveBuild(); setColor(build.robot);
+  $('#lvlReset').textContent = 'Progreso reiniciado';
+  setTimeout(() => { $('#lvlReset').textContent = 'Prueba: reiniciar progreso'; }, 2000);
+  if (curView === 'home') renderHome();
+});
+let touring = false;
+async function tutIdle() { let n = 0; while (n < 3) { await sleep(250); n = $('#tut').hidden ? n + 1 : 0; } }
+async function startTour() {
+  if (touring || (typeof PVP !== 'undefined' && PVP.code)) return; touring = true;
+  try { Object.values(TUT_KEYS).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  AU.init(); $('#rules').hidden = true;
+  try {
+    show('home'); goPage('home', true); await sleep(500);
+    await runTut(TUT_HOME, 'home'); await runTut(TUT_ARENA, 'arena');
+    goPage('his', true); await sleep(900); await tutIdle();
+    openGarage(); await sleep(500); await tutIdle();
+    await startDuel();
+  } finally { touring = false; }
+}
+$('#replayTut2').addEventListener('click', () => { AU.tap(); startTour(); });
+$('#replayTut').addEventListener('click', () => { AU.tap(); startTour(); });
+function renderTheme() {
+  $('#themeRow').innerHTML = ACCENTS.map(a => '<button class="sw' + (a[0] === accent ? ' on' : '') + '" data-acc="' + a[0] + '" aria-label="' + a[1] + '" aria-pressed="' + (a[0] === accent) + '" style="--sw:' + (a[2] || 'conic-gradient(#3fd9d2,#b79cff,#8ee26b,#3fd9d2)') + '"></button>').join('');
+  $('#themeName').textContent = ACCENTS.find(a => a[0] === accent)[1] + (armorHex(build.robot) ? ' · ahora manda el color equipado de tu colección; quítalo en Perfil para ver este.' : '');
+}
+$('#themeBtn').addEventListener('click', () => { AU.tap(); renderTheme(); $('#theme').hidden = false; });
+$('#closeTheme').addEventListener('click', () => { $('#theme').hidden = true; });
+$('#theme').addEventListener('click', e => { if (e.target.id === 'theme') $('#theme').hidden = true; });
+$('#themeRow').addEventListener('click', e => {
+  const b = e.target.closest('[data-acc]'); if (!b) return;
+  accent = b.dataset.acc; AU.tap();
+  try { localStorage.setItem('duelo-accent', accent); } catch (x) {}
+  setColor(build.robot); renderTheme(); if (curView === 'home') renderHome();
+});
+function renderProfile() {
+  const t = rec.w + rec.d + rec.l, L = levelOf(xp).level, st = starsOf(xp);
+  $('#profName').value = pname; $('#profAv').innerHTML = avatarHTML(56);
+  const lv = levelOf(xp), pr = L >= MAX_LEVEL ? starProg(xp) : Math.round(lv.into / lv.need * 100);
+  $('#profLv').innerHTML = '<div class="plt"><b>Nivel ' + L + '</b><span>' + (st ? '★ ' + st : (L >= MAX_LEVEL ? 'Máximo' : lv.into + ' / ' + lv.need + ' XP')) + '</span></div><div class="fbar"><i style="width:' + pr + '%"></i></div>';
+  $('#profRec').innerHTML = ['easy', 'normal', 'hard'].map(d => { const r = recD[d] || { w: 0, d: 0, l: 0 }; return '<div class="pr ' + d + '"><b>' + DIFFS[d].name + '</b><span><em>' + r.w + '</em> G</span><span><em>' + r.d + '</em> E</span><span><em>' + r.l + '</em> P</span></div>'; }).join('');
+  $('#profStats').innerHTML = '<div><b>' + L + '</b>Nivel</div><div><b class="star">' + st + ' ★</b>Estrellas</div><div><b>' + t + '</b>Duelos</div><div><b>' + (t ? Math.round(rec.w / t * 100) : 0) + '%</b>Victorias</div>';
+}
+const saveName = () => { const v = $('#profName').value.trim().slice(0, 14); if (v) pname = v; try { localStorage.setItem('duelo-name', pname); } catch (e) {} };
+$('#profName').addEventListener('change', saveName); $('#profName').addEventListener('blur', saveName);
+$('#nearbyBtn').addEventListener('click', pvpOpen);
+$('#closeRules').addEventListener('click', () => { $('#rules').hidden = true; });
+$('#rules').addEventListener('click', e => { if (e.target.id === 'rules') $('#rules').hidden = true; });
+$('#again').addEventListener('click', () => { if (PVP.code) pvpAgain(); else startDuel(); });
+$('#endGarage').addEventListener('click', () => { $('#end').hidden = true; openGarage(); });
+$('#endHome').addEventListener('click', () => { $('#end').hidden = true; pvpLeave(); show('home'); });
+$$('.snd').forEach(b => b.addEventListener('click', () => {
+  AU.on = !AU.on; AU.init();
+  try { localStorage.setItem('duelo-snd', AU.on ? '1' : '0'); } catch (e) {}
+  renderSnd();
+  if (AU.on) AU.pick();
+}));
+
+
+$('#closeInfo').addEventListener('click', () => { $('#info').hidden = true; });
+$('#info').addEventListener('click', e => { if (e.target.id === 'info') $('#info').hidden = true; });
+document.addEventListener('keydown', e => {
+  if (e.target.classList && e.target.classList.contains('info') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); infoClick({ target: e.target, stopPropagation() {} }); }
+  if (e.key === 'Escape') { $('#info').hidden = true; $('#rules').hidden = true; }
+});
+$('#diffRow').addEventListener('click', e => {
+  const b = e.target.closest('[data-diff]'); if (!b) return;
+  diff = b.dataset.diff; AU.tap();
+  try { localStorage.setItem('duelo-diff', diff); } catch (x) {}
+  renderDiff();
+});
+renderSnd();
+show('home');
+{ let first = true; try { first = localStorage.getItem(TUT_KEYS.home) !== '1'; } catch (e) {} setTimeout(() => { if (first) startTour(); else runTut(TUT_ARENA, 'arena'); }, 50); }
+// ===== colección: cosméticos, tickets y ruleta =====
+var SVGE = {
+  roca: '<polygon points="12,3 20,9 17,20 7,20 4,9"/>', rayo: '<polygon points="13,2 5,14 11,14 9,22 19,9 13,9"/>',
+  engr: '<circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3 2.4"/>', hex: '<polygon points="12,2 21,7 21,17 12,22 3,17 3,7"/>',
+  cris: '<polygon points="12,2 19,9 12,22 5,9"/>', escu: '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/>',
+  llama: '<path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-4 3-6 1 2 1 3 2 3 0-3-1-5 1-9z"/>',
+  ojo: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5"/>',
+  estr: '<polygon points="12,2 15,9 22,9.5 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9.5 9,9.5"/>'
+};
+const CAT = [
+  { id: 'c_ceniza', k: 'col', r: 'g', n: 'Ceniza', v: '#9aa3ad' }, { id: 'c_arena', k: 'col', r: 'g', n: 'Arena', v: '#d8c49a' }, { id: 'c_musgo', k: 'col', r: 'g', n: 'Musgo', v: '#7fa36b' }, { id: 'c_pizarra', k: 'col', r: 'g', n: 'Pizarra', v: '#6b7a8f' },
+  { id: 'c_oceano', k: 'col', r: 'b', n: 'Océano', v: '#3f8fe0' }, { id: 'c_hielo', k: 'col', r: 'b', n: 'Hielo', v: '#8fe0f0' }, { id: 'c_violeta', k: 'col', r: 'b', n: 'Amatista', v: '#8f6be0' },
+  { id: 'c_magma', k: 'col', r: 'r', n: 'Magma', v: '#e0482f' }, { id: 'c_rubi', k: 'col', r: 'r', n: 'Rubí', v: '#d0245a' }, { id: 'c_brasa', k: 'col', r: 'r', n: 'Brasa', v: '#ff8a3d' },
+  { id: 'e_roca', k: 'emb', r: 'g', n: 'Roca', v: 'roca' }, { id: 'e_rayo', k: 'emb', r: 'g', n: 'Rayo', v: 'rayo' }, { id: 'e_engr', k: 'emb', r: 'g', n: 'Engranaje', v: 'engr' }, { id: 'e_hex', k: 'emb', r: 'g', n: 'Hexágono', v: 'hex' },
+  { id: 'e_cris', k: 'emb', r: 'b', n: 'Cristal', v: 'cris' }, { id: 'e_escu', k: 'emb', r: 'b', n: 'Escudo', v: 'escu' }, { id: 'e_llama', k: 'emb', r: 'b', n: 'Llama', v: 'llama' }, { id: 'e_ojo', k: 'emb', r: 'r', n: 'Ojo', v: 'ojo' },
+  { id: 'm_simple', k: 'mar', r: 'g', n: 'Simple', v: 'f-simple' }, { id: 'm_punto', k: 'mar', r: 'g', n: 'Punteado', v: 'f-punto' }, { id: 'm_doble', k: 'mar', r: 'g', n: 'Doble', v: 'f-doble' }, { id: 'm_grueso', k: 'mar', r: 'g', n: 'Grueso', v: 'f-grueso' },
+  { id: 'm_neon', k: 'mar', r: 'b', n: 'Neón', v: 'f-neon' }, { id: 'm_remache', k: 'mar', r: 'b', n: 'Remache', v: 'f-remache' },
+  { id: 'au_petreo', k: 'col', r: 'o', n: 'Pétreo dorado', v: '#ffd34a', robot: 'petreo', hint: 'Gana 25 duelos en Difícil con Pétreo.' },
+  { id: 'au_granito', k: 'col', r: 'o', n: 'Granito dorado', v: '#ffd34a', robot: 'granito', hint: 'Gana 15 duelos en Difícil con Granito.' },
+  { id: 'au_cuarzo', k: 'col', r: 'o', n: 'Cuarzo dorado', v: '#ffd34a', robot: 'cuarzo', hint: 'Gana 10 duelos en Difícil con Cuarzo terminando con menos de 20 de vida.' },
+  { id: 'ag_col', k: 'col', r: 's', n: 'Plateado', v: '#cfd8e3', stars: 2, hint: 'Consíguelo con 2 estrellas ★.' },
+  { id: 'ag_emb', k: 'emb', r: 's', n: 'Estrella', v: 'estr', stars: 4, hint: 'Consíguelo con 4 estrellas ★.' },
+  { id: 'ag_mar', k: 'mar', r: 's', n: 'Marco plateado', v: 'f-plata', stars: 6, hint: 'Consíguelo con 6 estrellas ★.' }
+];
+var CBY = {}; CAT.forEach(c => { CBY[c.id] = c; });
+const RN = { g: 'Gris', b: 'Azul', r: 'Rojo', o: 'Dorado', s: 'Plateado' };
+const DUPF = { g: 2, b: 4, r: 6 }, COSTF = { g: 25, b: 40, r: 60 };
+const WHEEL = [['f1', 30], ['x', 10], ['f3', 20], ['g', 20], ['b', 10], ['r', 6], ['m', 4]];
+const HARD_PTS = 6, NORM_NEED = 3;
+var col = null;
+function colDefault() { return { own: {}, fr: 0, tk: 1, since: 0, hp: 0, md: '', mn: 0, mdone: false, w: { petreo: 0, granito: 0, cuarzo: 0 }, cq: 0, mod: { m_blind: 1 }, eq: { col: '', emb: '', mar: '' } }; }
+try { const c = JSON.parse(localStorage.getItem('duelo-col')); col = c && c.own ? Object.assign(colDefault(), c) : colDefault(); } catch (e) { col = colDefault(); }
+function saveCol() { try { localStorage.setItem('duelo-col', JSON.stringify(col)); } catch (e) {} }
+function today() { try { return new Date().toLocaleDateString('en-CA'); } catch (e) { return ''; } }
+function armorHex(id) { if (!col) return null; const c = CBY[col.eq.col]; return c && col.own[c.id] && (!c.robot || c.robot === id) ? c.v : null; }
+function emblemSVG(v) { return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ((SVGE && (SVGE[v] || SVGE.hex)) || "") + '</svg>'; }
+function avatarHTML(px) {
+  const e = col && CBY[col.eq.emb], m = col && CBY[col.eq.mar];
+  return '<span class="av ' + (m && col.own[m.id] ? m.v : 'f-simple') + '" style="--px:' + (px || 28) + 'px">' + emblemSVG(e && col.own[e.id] ? e.v : 'hex') + '</span>';
+}
+function updateBadge() { const b = $('#tkBadge'); if (!b || !col) return; b.hidden = col.tk <= 0; b.textContent = col.tk; }
+function grant(id) { if (col.own[id]) return false; col.own[id] = 1; return true; }
+function checkAuto() {
+  const got = []; const st = starsOf(xp);
+  CAT.forEach(c => { if (c.stars && st >= c.stars && grant(c.id)) got.push(c.n); });
+  if (col.w.petreo >= 25 && grant('au_petreo')) got.push('Pétreo dorado');
+  if (col.w.granito >= 15 && grant('au_granito')) got.push('Granito dorado');
+  if (col.cq >= 10 && grant('au_cuarzo')) got.push('Cuarzo dorado');
+  return got;
+}
+function colProgress(dif, res, robot, hpEnd) {
+  let msg = '';
+  if (col.md !== today()) { col.md = today(); col.mn = 0; col.mdone = false; }
+  if (dif === 'normal') { col.mn++; if (col.mn >= NORM_NEED && !col.mdone) { col.mdone = true; col.tk++; msg += ' · Misión diaria lista: +1 ticket'; } }
+  if (dif === 'hard') {
+    col.hp += res === 'win' ? 3 : res === 'draw' ? 2 : 1;
+    while (col.hp >= HARD_PTS) { col.hp -= HARD_PTS; col.tk++; msg += ' · +1 ticket'; }
+    if (res === 'win') { col.w[robot] = (col.w[robot] || 0) + 1; if (robot === 'cuarzo' && hpEnd < 20) col.cq++; }
+  }
+  if (typeof isBoss !== 'undefined' && isBoss) {
+    if (res === 'win') {
+      col.st = 0; col.bs = (col.bs | 0) + 1; col.mod = col.mod || {};
+      const pool = MOD_IDS.filter(i => MODS[i].r === 'r' && !col.mod[i]);
+      if (col.bs <= 5 && pool.length) { const id = pool[Math.floor(Math.random() * pool.length)]; col.mod[id] = 1; msg += ' · ¡JEFE VENCIDO! Pieza exclusiva: ' + MODS[id].name; }
+      else { col.fr += 20; msg += ' · ¡JEFE VENCIDO! +20 fragmentos'; }
+      if (col.bs < 5) col.tipAr = 1;
+      if (col.bs === 5) { col.tk += 3; msg += ' · ¡Historia completada! +3 tickets'; }
+      else if (col.bs < 5) msg += ' · Capítulo ' + (col.bs + 1) + ' y arena ' + (col.bs + 1) + ' desbloqueados';
+    } else msg += ' · El jefe te espera: inténtalo otra vez';
+  } else if (res === 'win' && dif !== 'easy' && (col.st | 0) < 5) { col.st = (col.st | 0) + 1; msg += col.st === 5 ? ' · ¡Peldaño 5! El jefe te espera en Historia' : ' · Peldaño ' + col.st + '/5'; }
+  const got = checkAuto(); if (got.length) msg += ' · ¡Nuevo cosmético: ' + got.join(', ') + '!';
+  saveCol(); updateBadge(); return msg;
+}
+// ---- ruleta ----
+function wheelPick() { let x = Math.random() * 100; for (const [k, p] of WHEEL) { if ((x -= p) < 0) return k; } return 'f1'; }
+function newOf(r) { const l = CAT.filter(c => c.r === r); return l[Math.floor(Math.random() * l.length)]; }
+function spinOnce() {
+  col.tk--; col.since++;
+  const o = wheelPick(); let txt = '', nw = false, item = null, mod = null, dupf = 0, gar = false;
+  if (o === 'm') { const rr = Math.random() < .25 ? 'r' : 'b', pool = MOD_IDS.filter(i => i !== 'm_blind' && MODS[i].r === rr), id = pool[Math.floor(Math.random() * pool.length)]; col.mod = col.mod || {}; if (!col.mod[id]) { col.mod[id] = 1; nw = true; txt = 'Pieza nueva: ' + MODS[id].name; } else { const f = rr === 'r' ? 6 : 4; col.fr += f; dupf = f; txt = MODS[id].name + ' repetida: +' + f + ' fragmentos'; } mod = id; }
+  else if (o === 'f1') { col.fr += 1; txt = '+1 fragmento'; } else if (o === 'f3') { col.fr += 3; txt = '+3 fragmentos'; } else if (o === 'x') { col.tk++; txt = '¡Giro extra!'; }
+  else { const c = newOf(o); item = c; if (grant(c.id)) { nw = true; txt = 'Nuevo: ' + c.n + ' (' + RN[o] + ')'; } else { col.fr += DUPF[o]; dupf = DUPF[o]; txt = c.n + ' repetido: +' + DUPF[o] + ' fragmentos'; } }
+  if (!nw && col.since >= 5) {
+    const miss = CAT.filter(c => (c.r === 'g' || c.r === 'b' || c.r === 'r') && !col.own[c.id]);
+    if (miss.length) { const c = miss[Math.floor(Math.random() * miss.length)]; grant(c.id); nw = true; item = c; dupf = 0; gar = true; txt += ' · Garantía: ¡' + c.n + ' (' + RN[c.r] + ')!'; }
+  }
+  if (nw) col.since = 0;
+  saveCol(); updateBadge(); return { txt, nw, o, item, dupf, gar, mod };
+}
+let colTab = 'col', pend = '', spinning = false;
+const TABN = { col: 'Colores', emb: 'Emblemas', mar: 'Marcos' };
+function tileHTML(c) {
+  const own = !!col.own[c.id], on = col.eq[c.k] === c.id;
+  const face = c.k === 'col' ? '<i class="sw2" style="background:' + c.v + '"></i>' : c.k === 'emb' ? emblemSVG(c.v) : '<i class="fr ' + c.v + '"></i>';
+  return '<button class="ct r-' + c.r + (own ? '' : ' lock') + (on ? ' on' : '') + '" data-id="' + c.id + '">' + face + '<small>' + c.n + '</small></button>';
+}
+function renderCol() {
+  checkAuto(); saveCol();
+  const fp = Math.min(100, col.fr % 10 * 10 + (col.fr >= 10 && col.fr % 10 === 0 ? 100 : 0));
+  $('#colHead').innerHTML = '<div class="rstats"><div class="rs"><b>' + col.tk + '</b><small>Tickets</small></div><div class="rs"><b>' + col.fr + '</b><small>Fragmentos</small></div><div class="rs"><b>' + Object.keys(col.own).length + '/' + CAT.length + '</b><small>Cosméticos</small></div></div><div class="fbar" title="Fragmentos hacia el siguiente giro"><i style="width:' + fp + '%"></i></div><small class="fbl">' + (col.fr >= 10 ? '¡Ya puedes cambiar 10 fragmentos por un giro!' : (10 - col.fr % 10) + ' fragmentos para un giro extra') + '</small>';
+  $('#spinBtn').disabled = spinning || col.tk <= 0; $('#spinBtn').textContent = col.tk > 0 ? 'Girar la ruleta (1 ticket)' : 'Sin tickets';
+  $('#fragBtn').disabled = spinning || col.fr < 10; $('#fragBtn').hidden = col.fr < 10;
+  $('#colTabs').innerHTML = Object.keys(TABN).map(k => '<button class="chip' + (k === colTab ? ' sel' : '') + '" data-tab="' + k + '">' + TABN[k] + '</button>').join('');
+  $('#colGrid').innerHTML = CAT.filter(c => c.k === colTab).map(tileHTML).join('');
+  const LG = [['f1', '1 fragmento', 30], ['x', 'Giro extra', 10], ['f3', '3 fragmentos', 20], ['g', 'Cosmético gris', 20], ['b', 'Cosmético azul', 10], ['r', 'Cosmético rojo', 6], ['m', 'Pieza de robot', 4]];
+  $('#colMis').innerHTML = '<h3 class="rh">Qué puede salir</h3><div class="legend">' + LG.map(([k, n, p]) => '<div class="lg"><i style="background:' + SLC[k] + '"><svg viewBox="-13 -13 26 30">' + sliceIco(k) + '</svg></i><span>' + n + '</span><u><s style="width:' + p * 2.4 + '%;background:' + SLC[k] + '"></s></u><b>' + p + '%</b></div>').join('') + '</div><div class="rnotes"><div class="rn2"><b>Garantía</b><small>Si en 5 giros no te sale nada nuevo, el siguiente es seguro.</small></div><div class="rn2"><b>Elige tú</b><small>25 / 40 / 60 fragmentos = un cosmético gris / azul / rojo a elección.</small></div></div>';
+}
+function openCol() { $('#colMsg').textContent = ''; pend = ''; renderCol(); goPage('col'); }
+$('#colTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; colTab = b.dataset.tab; pend = ''; AU.tap(); renderCol(); });
+$('#colGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return; const c = CBY[b.dataset.id], msg = $('#colMsg'); AU.tap();
+  if (col.own[c.id]) { col.eq[c.k] = col.eq[c.k] === c.id ? '' : c.id; saveCol(); setColor(build.robot); msg.textContent = col.eq[c.k] ? c.n + ' equipado.' + (c.robot ? ' Solo se ve en ' + ROBOTS[c.robot].name + '.' : '') : c.n + ' quitado.'; pend = ''; }
+  else if (c.hint) { msg.textContent = c.n + ': ' + c.hint; pend = ''; }
+  else if (col.fr >= COSTF[c.r]) { if (pend === c.id) { col.fr -= COSTF[c.r]; grant(c.id); saveCol(); pend = ''; msg.textContent = '¡Compraste ' + c.n + '!'; AU.ready(); } else { pend = c.id; msg.textContent = 'Toca otra vez para comprar ' + c.n + ' por ' + COSTF[c.r] + ' fragmentos.'; } }
+  else { pend = ''; msg.textContent = c.n + ' (' + RN[c.r] + '): sale en la ruleta o cuesta ' + COSTF[c.r] + ' fragmentos (tienes ' + col.fr + ').'; }
+  renderCol();
+});
+$('#fragBtn').addEventListener('click', () => { if (col.fr < 10) return; col.fr -= 10; col.tk++; saveCol(); updateBadge(); AU.tap(); $('#spinRes').textContent = '10 fragmentos cambiados por 1 giro.'; renderCol(); });
+// ---- rueda ----
+const SLICES = [['f1', 10], ['g', 10], ['f3', 10], ['f1', 10], ['b', 10], ['f1', 10], ['g', 10], ['f3', 10], ['x', 10], ['r', 6], ['m', 4]];
+const SLC = { f1: '#2d86c4', f3: '#14c99a', g: '#b4bdca', b: '#5a74ff', r: '#f0475a', x: '#ffd34a', m: '#ff8a2a' }, SLT = { f1: '◆ 1', f3: '◆ 3', g: 'GRIS', b: 'AZUL', r: 'ROJO', x: '+1', m: 'PIEZA' };
+const SLA = []; { let a = 0; SLICES.forEach(([k, p]) => { const w = p * 3.6; SLA.push({ k, a0: a, a1: a + w, mid: a + w / 2 }); a += w; }); }
+function polar(r, deg) { const t = deg * Math.PI / 180; return (r * Math.sin(t)).toFixed(2) + ' ' + (-r * Math.cos(t)).toFixed(2); }
+function hexPts(r, cx, cy) { return [[0, -r], [r * .87, -r / 2], [r * .87, r / 2], [0, r], [-r * .87, r / 2], [-r * .87, -r / 2]].map(p => (p[0] + cx).toFixed(1) + ',' + (p[1] + cy).toFixed(1)).join(' '); }
+function gem(r, cx, cy) { return '<polygon points="' + hexPts(r, cx, cy) + '" fill="rgba(255,255,255,.22)" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><polygon points="' + hexPts(r * .45, cx, cy) + '" fill="#fff"/>'; }
+function sliceIco(k) {
+  if (k === 'f1') return gem(9, 0, 0);
+  if (k === 'f3') return gem(6.3, -8, 7) + gem(6.3, 8, 7) + gem(6.3, 0, -8);
+  if (k === 'm') return '<polygon points="' + hexPts(9, 0, 0) + '" fill="none" stroke="#2c1400" stroke-width="2.6" stroke-linejoin="round"/><rect x="-3.5" y="-3.5" width="7" height="7" rx="1" fill="#2c1400"/>';
+  if (k === 'x') return '<path d="M0 -9 L2.6 -2.6 L9 0 L2.6 2.6 L0 9 L-2.6 2.6 L-9 0 L-2.6 -2.6Z" fill="#2c1c00"/>';
+  const n = k === 'g' ? 1 : k === 'b' ? 2 : 3, ink = k === 'g' ? '#1b2330' : '#fff';
+  let p = ''; for (let i = 0; i < n; i++) p += '<circle cx="' + ((i - (n - 1) / 2) * 6.5).toFixed(1) + '" cy="13" r="2.1" fill="' + ink + '"/>';
+  return '<circle r="7" fill="none" stroke="' + ink + '" stroke-width="2.6"/><circle r="2.6" fill="' + ink + '"/>' + p;
+}
+(function drawWheel() {
+  let h = '<circle r="101" fill="#0c1018"/>';
+  SLA.forEach((s, si) => {
+    h += '<path d="M0 0 L' + polar(100, s.a0) + ' A100 100 0 ' + (s.a1 - s.a0 > 180 ? 1 : 0) + ' 1 ' + polar(100, s.a1) + ' Z" fill="' + (s.k === 'f1' && si % 2 ? '#1d5f9a' : SLC[s.k]) + '" stroke="#0c1018" stroke-width="1.5"/>';
+    h += '<g transform="rotate(' + s.mid.toFixed(1) + ') translate(0,' + (s.k === 'm' ? -77 : -73) + ') scale(.8)">' + sliceIco(s.k) + '</g>';
+  });
+  SLA.forEach(s => { h += '<circle cx="' + polar(97, s.a0).split(' ')[0] + '" cy="' + polar(97, s.a0).split(' ')[1] + '" r="2.4" fill="#ffd34a" stroke="#0c1018" stroke-width=".8"/>'; });
+  h += '<circle r="31" fill="#0c1018" stroke="#ffd34a" stroke-width="2.5"/><circle r="26" fill="none" stroke="#ffd34a" stroke-opacity=".35" stroke-width="1"/>';
+  h += '<circle r="100" fill="url(#wshade)"/><circle r="100" fill="none" stroke="#ffffff22" stroke-width="1"/>';
+  let hx = ''; for (let i = 0; i < 6; i++) hx += polar(132, i * 60) + ' ';
+  let fr = '<defs><linearGradient id="wfr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b485c"/><stop offset=".5" stop-color="#18202c"/><stop offset="1" stop-color="#0a0e14"/></linearGradient><radialGradient id="wshade"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".07"/></radialGradient></defs>';
+  fr += '<polygon points="' + hx + '" fill="url(#wfr)" stroke="#ffd34a" stroke-opacity=".55" stroke-width="2"/><polygon points="' + hx + '" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="7" transform="scale(.93)"/>';
+  fr += '<circle r="104" fill="none" stroke="#ffd34a" stroke-width="3"/>';
+  for (let a = 0; a < 360; a += 15) fr += '<circle class="bulb" cx="' + (109.5 * Math.sin(a * Math.PI / 180)).toFixed(1) + '" cy="' + (-109.5 * Math.cos(a * Math.PI / 180)).toFixed(1) + '" r="2.3"/>';
+  const w = $('#wheel'); if (w) { w.setAttribute('viewBox', '-138 -138 276 276'); w.innerHTML = fr + '<g id="wheelG" style="transform-origin:0 0">' + h + '</g>'; }
+})();
