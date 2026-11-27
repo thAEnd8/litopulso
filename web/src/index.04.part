@@ -1,0 +1,354 @@
+.hs.empty { border-style: dashed; color: var(--muted); font-size: 10.5px; cursor: default; background: transparent; }
+.hs .cost { top: 3px; left: 3px; width: 16px; height: 16px; font-size: 10px; line-height: 16px; }
+.hs .cico { width: 26px; height: 30px; } .hs b { font-size: 9.5px; }
+.hxp { width: 44px; height: 50px; } .pk.on .hxp { width: 60px; height: 68px; } .pk.on .hxp::before { inset: 3px; } .pick { gap: 10px; }
+.hxp { width: 52px; height: 59px; } .pk.on .hxp { width: 70px; height: 80px; } .hxp .mini { width: 82%; height: 82%; } .pick { gap: 12px; }
+
+.mslots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.mslot{border:1px dashed #ffffff30;border-radius:var(--cut);padding:6px 8px;display:flex;flex-direction:column;gap:2px;min-width:0;background:#ffffff08}
+.mslot.f{border:1px solid var(--accent,#ff8a2a);background:#ff8a2a14}.mslot.lk{opacity:.5}
+.mslot small{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}.mslot b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptile.mt{position:relative}.ptile.mt em{font-style:normal;font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}
+.ptile.mt.lock{opacity:.45}.ptile.mt .con{color:#ff7a88}.lkt{position:absolute;top:6px;right:8px;font-size:10px;color:#ffd34a}
+
+.gtabs{display:flex;gap:6px;margin:4px 0 10px;overflow-x:auto;scrollbar-width:none}.gtabs .chip{font-size:12.5px;padding:6px 13px}.gtabs .own{margin-left:auto}
+.swt{margin-left:auto;display:flex;align-items:center;gap:7px;flex:none;background:none;border:0;color:inherit;font:inherit;font-size:12px;padding:4px 0 4px 6px}
+.swt i{position:relative;width:34px;height:18px;border-radius:99px;background:#ffffff26;border:1px solid var(--line,#8886);transition:background .2s}
+.swt i::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#cfd6e0;transition:transform .2s}
+.swt.on i{background:var(--accent,#6cf);border-color:transparent}.swt.on i::after{transform:translateX(16px);background:#fff}
+.gtabs{overflow-x:visible;flex-wrap:nowrap}.gtabs .chip{padding:6px 10px}
+.steps{display:flex;flex-direction:column;align-items:center;gap:4px;margin:2px 0 6px}.steps small{font-size:11px;opacity:.75;letter-spacing:.06em;text-transform:uppercase}
+.steps div{display:flex;align-items:center;gap:7px}.steps i{width:22px;height:10px;border-radius:3px 6px 3px 6px;background:#ffffff22;border:1px solid #ffffff30;transform:skewX(-18deg)}
+.steps i.f{background:var(--accent,#6cf);border-color:transparent;box-shadow:0 0 8px var(--accent,#6cf)}
+.steps .bs{font:800 11px var(--font-display,inherit);letter-spacing:.08em;padding:3px 8px;border-radius:4px 10px 4px 10px;border:1px solid #ffd34a88;color:#ffd34a}.steps .bs.f{background:#ffd34a;color:#2c1c00;box-shadow:0 0 12px #ffd34a}
+
+.chap{border:1px solid #ffffff26;border-radius:var(--cut);padding:12px;margin:10px 0;display:flex;flex-direction:column;gap:8px;background:#ffffff08}.chap b{font:700 14px var(--font-display);letter-spacing:.04em}.chap small{opacity:.75;font-size:12px}.chap.lock{opacity:.45;border-style:dashed}
+.steps2{display:flex;align-items:center;gap:8px;margin:4px 0}.steps2 i{flex:1;height:34px;display:grid;place-items:center;border-radius:4px 12px 4px 12px;background:#ffffff14;border:1px solid #ffffff2a;font-style:normal}.steps2 i u{text-decoration:none;font:700 13px var(--font-display);opacity:.6}
+.steps2 i.f{background:var(--accent,#6cf);border-color:transparent;color:#000;box-shadow:0 0 10px var(--accent,#6cf)}.steps2 i.f u{opacity:1}
+.steps2 .bs{font:800 12px var(--font-display);letter-spacing:.08em;padding:9px 10px;border-radius:4px 12px 4px 12px;border:1px solid #ffd34a88;color:#ffd34a}.steps2 .bs.f{background:#ffd34a;color:#2c1c00;box-shadow:0 0 12px #ffd34a}
+
+.evbox{margin:4px auto 0;max-width:340px;text-align:center;font-size:12px;padding:5px 10px;border:1px solid #ffd34a88;border-radius:4px 14px 4px 14px;background:#ffd34a14;color:#ffd34a;display:flex;flex-direction:column;gap:1px}.evbox small{color:var(--fg);opacity:.8;font-size:11px}
+.evbox.pop{animation:evpop .7s ease}@keyframes evpop{0%{transform:scale(.6);opacity:0;box-shadow:0 0 0 #ffd34a}50%{transform:scale(1.08);box-shadow:0 0 18px #ffd34a}100%{transform:scale(1);opacity:1}}
+
+.logp{position:fixed;inset:0;z-index:60;background:#000a;display:grid;place-items:center;padding:16px}.logp[hidden]{display:none}
+.logbox{width:min(360px,100%);max-height:70vh;display:flex;flex-direction:column;background:var(--bg,#0f141b);border:1px solid #ffffff30;border-radius:4px 18px 4px 18px;padding:12px}
+.logh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font:700 14px var(--font-display)}
+#logList{list-style:none;margin:0;padding:0;overflow:auto;display:flex;flex-direction:column;gap:6px}
+#logList li{display:grid;grid-template-columns:34px 1fr;gap:2px 8px;font-size:12px;padding:6px 8px;border-radius:4px 10px 4px 10px;background:#ffffff0a}
+#logList li b{grid-row:span 2;color:var(--you,#6cf)}#logList li em{font-style:normal;font-weight:700}#logList li i{grid-column:2;font-style:normal;color:#ffd34a;font-size:11px}
+
+.modrow{display:flex;gap:6px;margin:6px 0 2px}.modb{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;text-align:left;padding:6px 8px;border-radius:4px 12px 4px 12px;border:1px solid #ff8a2a99;background:#ff8a2a14;color:inherit;font:inherit}
+.modb b{font-size:11.5px;color:#ffb36b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.modb small{font-size:9.5px;opacity:.8;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.modb.off{opacity:.45}.modb:disabled{opacity:.3}
+
+.arrow{display:flex;gap:6px;justify-content:center;margin:2px 0}.arrow button{width:36px;height:30px;border-radius:4px 12px 4px 12px;border:1px solid #ffffff2a;background:#ffffff0c;color:inherit;font:700 13px var(--font-display)}
+.arrow button.on{background:var(--you);color:#06121a;border-color:transparent}.arrow button.lk{opacity:.5}
+.arena.battle.ar2{background:radial-gradient(ellipse at 50% 100%,#8a5a2a55,transparent 70%)}
+.arena.battle.ar3{background:radial-gradient(ellipse at 50% 100%,#3aa0ff44,transparent 70%)}
+.arena.battle.ar4{background:radial-gradient(ellipse at 50% 100%,#b06bff55,transparent 70%)}
+.arena.battle.ar5{background:radial-gradient(ellipse at 50% 100%,#ff4a5a55,transparent 70%),radial-gradient(ellipse at 50% 0%,#ffd34a22,transparent 60%)}
+</style>
+
+<section class="view" id="homeView">
+<div class="pager" id="pager">
+<div class="page" id="pgMer"><div class="pgin">
+    <h2>Ruleta</h2>
+    <p class="sub" id="colHead"></p>
+    <div class="wheelwrap"><i class="ptr"></i><svg id="wheel" viewBox="-110 -110 220 220" aria-hidden="true"></svg><span class="hub">✦</span></div>
+    <div id="spinRes" class="spinres" aria-live="polite"></div>
+    <button class="btn" id="spinBtn">Girar la ruleta</button>
+    <button class="btn-link" id="fragBtn" hidden>Cambiar 10 fragmentos por 1 giro</button>
+    <p class="sub" id="colMis"></p>
+    <h2 class="h2s">Mercado</h2>
+    <p class="sub" id="merHead"></p>
+    <div class="cgrid" id="merList"></div>
+</div></div>
+<div class="page" id="pgHis"><div class="pgin">
+    <h2>Historia</h2>
+    <p class="sub">Cada victoria en duelos normales o difíciles te acerca al jefe.</p>
+    <div id="hisList"></div>
+    <button class="btn" id="bossBtn">Combatir al jefe</button>
+</div></div>
+<div class="page" id="pgHome">
+  <div class="home">
+    <div class="top">
+      <span class="eyebrow">v9.0 · duelo 1v1</span>
+      <div class="tools"><span class="rec"></span></div>
+    </div>
+    <h1 class="logo">Lito<span>pulso</span></h1>
+    <div class="stage" aria-hidden="true">
+      <div class="hero you"><div class="rwrap" id="homeYou"></div></div>
+      <span class="vs">VS</span>
+      <div class="hero foe"><div class="rwrap" id="homeFoe"></div><span class="qm" aria-hidden="true">?</span></div>
+    </div>
+    <button class="build" id="buildCard" aria-label="Editar mi equipo en el garaje"></button>
+    <div class="diff" id="diffRow" role="radiogroup" aria-label="Dificultad del rival"></div>
+    <p class="diff-t" id="diffText"></p>
+    <div class="arrow" id="arenaRow" role="radiogroup" aria-label="Arena"></div>
+    <p class="diff-t" id="arenaText"></p>
+    <div class="actions">
+      <button class="btn" id="playBtn">Jugar</button>
+      <button class="btn ghost nearby" id="nearbyBtn">Duelo en línea · con código</button>
+    </div>
+  </div>
+</div>
+<div class="page" id="pgMis"><div class="pgin">
+    <h2>Misiones</h2>
+    <p class="sub">Completa misiones para ganar tickets y cosméticos.</p>
+    <div id="misTop" class="rstats"></div>
+    <div id="misList"></div>
+    <button class="btn" id="openColl">Ir a la ruleta</button>
+</div></div>
+<div class="page" id="pgProf"><div class="pgin">
+    <h2>Mi perfil</h2>
+    <div class="phero"><div id="profAv" class="profav"></div><input id="profName" class="field pname" maxlength="14" autocomplete="off" aria-label="Nombre (máx. 14 letras)"><small class="sub">Toca el nombre para cambiarlo</small><div id="profLv" class="plv"></div></div>
+    <div id="profStats" class="pstats"></div>
+    <h3 class="rh">Récord por dificultad</h3>
+    <div id="profRec" class="prec"></div>
+    <h2 class="h2s">Colección</h2>
+    <p class="sub colmsg" id="colMsg" aria-live="polite"></p>
+    <div class="ctabs" id="colTabs"></div>
+    <div class="cgrid" id="colGrid"></div>
+    <p class="sub">Tu perfil se guarda solo en este teléfono. Más adelante, con cuenta, te seguirá a otro aparato.</p>
+</div></div>
+<div class="page" id="pgAj"><div class="pgin">
+    <h2>Ajustes</h2>
+    <div class="sech">Apariencia y sonido</div>
+    <div class="setrow"><i class="shx">◐</i><div class="stx"><b>Color de la interfaz</b><small id="themeSub">Toca para elegir</small></div><button class="swbtn" id="themeBtn" aria-label="Cambiar color"></button></div>
+    <div class="setrow"><i class="shx">♪</i><div class="stx"><b>Sonido</b><small>Efectos y música</small></div><button class="snd tg" aria-label="Sonido" aria-pressed="true"></button></div>
+    <div class="sech">Navegación</div>
+    <div class="navopts" id="navOpts" role="radiogroup" aria-label="Estilo de navegación"><button class="no" role="radio" data-nav="bar">Barra fija</button><button class="no" role="radio" data-nav="fan">Abanico hexagonal</button><button class="no" role="radio" data-nav="side">Menú lateral</button><button class="no" role="radio" data-nav="fab">Botón flotante</button></div>
+    <div class="sech">Ayuda</div>
+    <button class="setrow link helpBtn"><i class="shx">?</i><div class="stx"><b>Cómo se juega</b><small>Las reglas en pocas líneas</small></div><span class="go">›</span></button>
+    <button class="setrow link" id="replayTut2"><i class="shx">↻</i><div class="stx"><b>Ver el tutorial otra vez</b><small>Recorre todo el tutorial desde el inicio</small></div><span class="go">›</span></button>
+    <p class="ver">Litopulso · v9.0</p>
+</div></div>
+</div>
+</section>
+
+<section class="view" id="garageView" hidden>
+  <div class="garage">
+    <div class="top">
+      <button class="icon-btn" id="gBack" aria-label="Volver al inicio">←</button>
+      <h2>Garaje</h2>
+      <button class="btn-link" id="gRandom">Aleatorio</button>
+    </div>
+    <div class="sec">
+      <div class="sec-t"><h3>Elige tu robot</h3></div>
+      <div class="pick" id="gRobots"></div>
+      <div class="rb" id="gRobotInfo"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t"><h3>Mi mano</h3><span class="count" id="hCount"></span></div>
+      <div class="hnd" id="gHand"></div>
+    </div>
+    <div class="gtabs" id="gTabs"></div>
+    <div class="sec" id="sCards">
+      <div class="sec-t"><h3>Todas las cartas</h3><span class="count" id="cCount"></span></div>
+      <div class="gfil" id="gFil"></div>
+      <div class="cgrid" id="gCards"></div>
+      <div class="detail" id="gDetail"></div>
+    </div>
+    <div class="sec" id="sPass" hidden>
+      <div class="sec-t"><h3>Pasivas</h3><span class="count" id="pCount"></span></div>
+      <div class="pgrid" id="gPass"></div>
+    </div>
+    <div class="sec" id="sMods" hidden>
+      <div class="sec-t"><h3>Módulos · botón de 1 uso por duelo</h3><span class="count" id="mCount"></span></div>
+      <div class="mslots" id="gModSlots"></div>
+      <div class="pgrid" id="gMods"></div>
+    </div>
+    <div class="dock">
+      <p class="status" id="gStatus"></p>
+      <button class="btn" id="gPlay">Jugar</button>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="duelView" hidden>
+  <main class="wrap" id="app">
+    <header class="top">
+      <button class="icon-btn" id="quitBtn" aria-label="Salir al inicio">←</button>
+      <h1>Duelo</h1>
+      <div class="tcen"><div class="turn" id="turn"></div><span class="pvpclock" id="pvpClock" hidden></span><div class="evbox" id="evBox" hidden></div></div>
+      <div class="tools">
+        <span class="rec" title="Ganadas, empates y perdidas de este navegador"></span>
+        <button class="icon-btn snd" aria-label="Sonido" aria-pressed="true">♪</button>
+        <button class="icon-btn" id="logBtn" aria-label="Historial">≡</button>
+        <button class="icon-btn helpBtn" aria-label="Cómo se juega">?</button>
+      </div>
+    </header>
+
+    <div class="logp" id="logPanel" hidden><div class="logbox"><div class="logh"><b>Historial</b><button class="icon-btn" id="logClose" aria-label="Cerrar">✕</button></div><ol id="logList"></ol></div></div>
+
+    <section class="arena battle" aria-label="Arena">
+      <section class="fighter foe" id="foe" aria-label="Rival"></section>
+      <div class="stg foe" id="stageFoe"></div>
+      <div class="slotcol foe"><span class="lbl">Rival</span><div class="pcard back" id="slotFoe">?</div></div>
+      <span class="vs2">VS</span>
+      <div class="slotcol you"><span class="lbl">Tú</span><div class="pcard empty" id="slotYou">Elige</div></div>
+      <div class="stg you" id="stageYou"></div>
+      <section class="fighter you" id="you" aria-label="Tú"></section>
+    </section>
+    <p class="msg" id="msg" aria-live="polite"></p>
+
+    <div class="controls" id="controls">
+      <div class="hand" id="hand"></div>
+      <div class="modrow" id="modRow" hidden></div>
+      <button class="over" id="overBtn" disabled></button>
+    </div>
+  </main>
+  <div class="intro" id="intro" hidden>
+    <div class="b" id="introFoe"></div>
+    <div class="vsx">VS</div>
+    <div class="a" id="introYou"></div>
+    <div class="go2">¡DUELO!</div>
+  </div>
+</section>
+
+<div class="flash" id="flash"></div>
+<div class="kobanner" id="ko" hidden>K.O.</div>
+<div class="evpop" id="evPop" hidden></div>
+<div class="evmini passmini" id="passMini" hidden></div>
+<div class="evmini" id="evMini" hidden></div>
+<div class="storyv" id="storyV" hidden>
+  <div class="sthead"><button class="stback" id="stClose" aria-label="Cerrar">&#8592;</button><b>Capítulo 1 · La grieta del Hexx</b></div>
+  <div class="stbody" id="storyBody"></div>
+  <div class="stnav" id="storyNav"><button class="btn ghost" id="stPrev">Anterior</button><button class="btn" id="stNext">Siguiente</button></div>
+</div>
+
+<div class="sheet" id="rules" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Cómo se juega">
+    <h2>Cómo se juega</h2>
+    <p class="sub">En el Garaje eliges tu robot, hasta 5 cartas (empiezas con 4 y desbloqueas más al subir de nivel) y 2 pasivas de 4. Los dos jugadores eligen una carta en secreto y se revelan a la vez.</p>
+    <p class="sub">Cada carta es de un tipo, y el tipo decide a quién gana:</p>
+    <ul>
+      <li><b>Ataque</b> gana a la Desvío y pierde contra la Defensa.</li>
+      <li><b>Habilidad</b> rompe la Defensa y pierde contra la Desvío.</li>
+      <li><b>Defensa</b> frena el Ataque y pierde contra la Habilidad.</li>
+      <li><b>Desvío</b> evita la Habilidad y pierde contra el Ataque.</li>
+    </ul>
+    <p class="sub">Cada carta de un mismo tipo cambia el costo, el daño o un efecto. El número en su esquina es el costo de energía.</p>
+    <p class="sub"><b>Energía:</b> empiezas con la de tu robot, recuperas 2 por turno (máximo 10) y 1 extra si tu Defensa o Desvío aciertan.</p>
+    <p class="sub"><b>Racha y Sobrecarga:</b> la racha sube 1 cuando aciertas o ganas el intercambio, y se pierde si te golpean sin que golpees o si tu golpe falla. Con 5 puedes usar la Sobrecarga: quita 60, la Defensa solo frena la mitad y el Desvío la evita. La racha se gasta aunque el rival lo desvíe. El rival también tiene la suya.</p>
+    <p class="sub">Gana quien deje al rival sin vida; tras 30 turnos gana quien tenga más.</p>
+    <p class="sub"><b>Piezas (Módulos):</b> las que equipes en el Garaje aparecen como botones bajo tus cartas. Cada una se usa <b>una vez por duelo</b>, no gasta tu turno y tiene un costo (vida o energía). Las consigues en la ruleta y en el jefe.</p>
+    <p class="sub"><b>Eventos de arena:</b> en los turnos 10, 15, 20 y 25 pasa algo que cambia las reglas para los dos (barajar cartas, mano corta, Sobrecarga con racha 2, daño a la mitad o doble, y más). Se avisa un turno antes. Los de los turnos 20 y 25 quitan vida para terminar los duelos largos.</p>
+    <p class="sub"><b>Historia y jefes:</b> son 5 capítulos. En cada uno, cada victoria en Normal o Difícil sube un peldaño; con 5 peldaños combates al jefe del capítulo (cada jefe es más duro y usa más piezas). Al vencerlo ganas una pieza exclusiva y se desbloquea el siguiente capítulo y su arena. Al terminar el capítulo 5 ganas 3 tickets.</p>
+    <p class="sub"><b>Arenas:</b> en Inicio eliges la arena (1 a 5); cada una tiene una regla fija: 1 sin regla, 2 golpes +3, 3 energía +1 por turno, 4 Sobrecarga con racha 4, 5 eventos cada 5 turnos. Se desbloquean al vencer a los jefes de los capítulos 1 a 4. Los jefes siempre pelean en la arena de su capítulo.</p>
+    <p class="sub"><b>Dificultad:</b> Fácil (rival con 10 % menos de vida), Normal (30 % más de vida y +2 de daño; ganas cerca de 1 de cada 3.5) y Difícil (44 % más de vida y +3 de daño, aprende cómo juegas; ganas cerca de 1 de cada 5).</p>
+    <div class="testrow"><button class="btn-link" id="tkUp">Prueba: +5 tickets</button><button class="btn-link" id="lvlUp">Prueba: subir un nivel</button><button class="btn-link" id="lvlReset">Prueba: reiniciar progreso</button></div>
+    <button class="btn ghost" id="replayTut">Ver el tutorial otra vez</button>
+    <button class="btn" id="closeRules">Entendido</button>
+  </div>
+</div>
+
+<div class="sheet" id="end" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Resultado">
+    <div class="endbadge" id="endB"></div>
+    <h2 class="end-title" id="endT"></h2>
+    <div id="endS" class="endstats"></div>
+    <div class="xpbox"><div class="xpbar"><i id="xpFill"></i></div><p class="sub" id="xpText"></p></div>
+    <div class="lvlup" id="endUp" hidden></div>
+    <button class="btn" id="again">Revancha</button>
+    <button class="btn ghost" id="endGarage">Garaje</button>
+    <button class="btn ghost" id="endHome">Inicio</button>
+  </div>
+</div>
+
+<div class="sheet" id="pvp" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Duelo en línea">
+    <h2>Duelo en línea</h2>
+    <div id="pvpMenu">
+      <p class="sub">Reta a un amigo, cada quien en su teléfono. Los dos necesitan internet. Juegas con tu equipo del Garaje, sin módulos, y cada turno tiene 40 segundos.</p>
+      <button class="btn" id="pvpHost">Crear sala</button>
+      <p class="sub pvpor">o escribe el código de tu amigo</p>
+      <div class="pvpjoin"><input id="pvpCode" class="field" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Código de sala"><button class="btn" id="pvpJoin">Unirme</button></div>
+      <p class="sub" id="pvpRec"></p>
+    </div>
+    <div id="pvpWait" hidden>
+      <p class="sub" id="pvpWaitT"></p>
+      <div class="pvpcode" id="pvpShow"></div>
+      <p class="sub pvpst" id="pvpSt">Conectando&hellip;</p>
+    </div>
+    <p class="sub pvperr" id="pvpErr" aria-live="polite"></p>
+    <button class="btn ghost" id="pvpClose">Cerrar</button>
+  </div>
+</div>
+
+<div class="sheet" id="info" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Información">
+    <h2 id="infoT"></h2>
+    <p class="sub" id="infoK"></p>
+    <p id="infoD"></p>
+    <p class="pro" id="infoP"></p>
+    <p class="con" id="infoC"></p>
+    <button class="btn" id="closeInfo">Entendido</button>
+  </div>
+</div>
+
+<div class="tut" id="tut" hidden>
+  <div class="tut-card" role="dialog" aria-label="Asistente">
+    <div class="tut-av" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" class="av-o"/><circle cx="20" cy="20" r="7" class="av-i"/></svg></div>
+    <div class="tut-body">
+      <b>Asistente</b>
+      <p id="tutT"></p>
+      <div class="tut-row"><span id="tutN"></span><button class="btn-link" id="tutSkip">Saltar</button><button class="tut-next" id="tutNext">Siguiente</button></div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="sheet" id="theme" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Color de la interfaz">
+    <h2>Color de la interfaz</h2>
+    <div class="swrow" id="themeRow"></div>
+    <p class="sub" id="themeName"></p>
+    <button class="btn" id="closeTheme">Listo</button>
+  </div>
+</div>
+
+<script>
+// ---------- reglas del duelo (sin interfaz) ----------
+const CFG = { hp: 100, energy: 5, maxEnergy: 10, regen: 2, bonus: 1, maxTurns: 30, scMax: 5, overDmg: 60, handSize: 5, passiveSlots: 2 };
+const TYPE_NAME = { attack: 'Ataque', guard: 'Defensa', dodge: 'Desvío', skill: 'Habilidad', over: 'Sobrecarga' };
+
+// 10 cartas: todas derivan de los 4 tipos, que son los que deciden quién le gana a quién
+const CARDS = {
+  atk:      { id: 'atk',      name: 'Martillo',  type: 'attack', r: 'g', cost: 3, dmg: 20, text: 'Quita 20 de vida.' },
+  fast:     { id: 'fast',     name: 'Pulso',     type: 'attack', r: 'b', cost: 2, dmg: 15, text: 'Ataque barato: quita 15 de vida.' },
+  heavy:    { id: 'heavy',    name: 'Derrumbe',  type: 'attack', r: 'r', cost: 4, dmg: 27, text: 'Ataque caro: quita 27 de vida.' },
+  impeto:   { id: 'impeto',   name: 'Ímpetu',    type: 'attack', r: 'b', cost: 3, dmg: 16, gain: 1, text: 'Quita 16 de vida y, si golpea, recuperas 1 de energía.' },
+  alud:     { id: 'alud',     name: 'Alud',      type: 'attack', r: 'b', cost: 4, dmg: 30, missLoss: 2, text: 'Quita 30 de vida, pero si el rival usa Defensa pierdes 2 de energía más.' },
+  guard:    { id: 'guard',    name: 'Muro',      type: 'guard',  r: 'g', cost: 1, text: 'Frena el Ataque.' },
+  counter:  { id: 'counter',  name: 'Rebote',    type: 'guard',  r: 'b', cost: 2, reflect: 8, text: 'Frena el Ataque y le devuelve 8 de daño.' },
+  barrera:  { id: 'barrera',  name: 'Barrera',   type: 'guard',  r: 'g', cost: 2, gain: 2, text: 'Frena el Ataque y, si lo logra, recuperas 2 de energía.' },
+  fortaleza:{ id: 'fortaleza',name: 'Fortaleza', type: 'guard',  r: 'r', cost: 2, blockAll: true, text: 'Frena el Ataque y también la Sobrecarga completa (otras Defensas frenan solo la mitad). La Habilidad la rompe.' },
+  dodge:    { id: 'dodge',    name: 'Giro',      type: 'dodge',  r: 'g', cost: 1, text: 'Evita la Habilidad.' },
+  feint:    { id: 'feint',    name: 'Sombra',    type: 'dodge',  r: 'b', cost: 2, half: true, text: 'Evita la Habilidad y recibe solo la mitad del daño de un Ataque.' },
+  cauce:    { id: 'cauce',    name: 'Cauce',     type: 'dodge',  r: 'g', cost: 2, gain: 4, text: 'Evita la Habilidad y, si lo logra, recuperas 4 de energía.' },
+  espejismo:{ id: 'espejismo',name: 'Espejismo', type: 'dodge',  r: 'b', cost: 2, drain: 4, text: 'Evita la Habilidad y, si lo logra, el rival pierde 4 de energía.' },
+  skill:    { id: 'skill',    name: 'Fractura',  type: 'skill',  r: 'g', cost: 6, dmg: 35, text: 'Quita 35 de vida. Rompe la Defensa.' },
+  light:    { id: 'light',    name: 'Grieta',    type: 'skill',  r: 'b', cost: 4, dmg: 21, text: 'Habilidad barata: quita 21 de vida.' },
+  crush:    { id: 'crush',    name: 'Implosión', type: 'skill',  r: 'r', cost: 8, dmg: 44, text: 'Habilidad enorme: quita 44 de vida.' },
+  iman:     { id: 'iman',     name: 'Imán',      type: 'skill',  r: 'b', cost: 4, dmg: 15, drain: 2, text: 'Quita 15 de vida y, si golpea, el rival pierde 2 de energía.' },
+  grito:    { id: 'grito',    name: 'Grito',     type: 'skill',  r: 'r', cost: 4, dmg: 17, lockDodge: true, text: 'Quita 17 de vida y, si golpea, el rival no puede usar Desvío el siguiente turno.' }
+};
+const OVER = { id: 'over', name: 'Sobrecarga', type: 'over', cost: 0, dmg: CFG.overDmg };
+
+const PASSIVES = {
+  core:     { robot: 'petreo',  name: 'Núcleo eficiente', short: 'Núcleo',   idle: 1,  text: 'Recuperas 1 de energía extra en los turnos en que nadie recibe daño.' },
+  reflex:   { robot: 'petreo',  name: 'Reflejos',         short: 'Reflejos', def: 4,   text: 'Si tu Defensa o Desvío aciertan, recuperas 4 de energía extra en vez de 1.' },
+  stone:    { robot: 'petreo',  name: 'Piel de piedra',   short: 'Piel',     hp: 20,   text: 'Empiezas con 20 de vida extra.' },
+  fury:     { robot: 'petreo',  name: 'Furia',            short: 'Furia',    fury: 6, text: 'Tus golpes hacen +6 de daño mientras tengas menos vida que el rival.' },
+  g_roca:   { robot: 'granito', name: 'Roca madre',       short: 'Roca',     hp: 20,   text: 'Empiezas con 20 de vida extra.' },
+  g_carga:  { robot: 'granito', name: 'Carga lenta',      short: 'Carga',    start: 3, text: 'Empiezas con 3 de energía extra.' },
+  g_coraza: { robot: 'granito', name: 'Coraza',           short: 'Coraza',   def: 4,   text: 'Si tu Defensa o Desvío aciertan, recuperas 4 de energía extra en vez de 1.' },
+  g_terco:  { robot: 'granito', name: 'Terquedad',        short: 'Terco',    fury: 7, text: 'Tus golpes hacen +7 de daño mientras tengas menos vida que el rival.' },
+  c_reson:  { robot: 'cuarzo',  name: 'Resonancia',       short: 'Resonancia', idle: 2, text: 'Recuperas 2 de energía extra en los turnos en que nadie recibe daño.' },
+  c_filo:   { robot: 'cuarzo',  name: 'Filo de cristal',  short: 'Filo',     edge: 4, text: 'Todos tus golpes hacen +4 de daño.' },
+  c_templa: { robot: 'cuarzo',  name: 'Cristal templado', short: 'Templado', hp: 16,   text: 'Empiezas con 16 de vida extra.' },
+  c_destello:{ robot: 'cuarzo', name: 'Destello',         short: 'Destello', start: 2, edge: 2, text: 'Empiezas con 2 de energía extra y tus golpes hacen +2 de daño.' }
+};
