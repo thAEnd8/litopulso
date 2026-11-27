@@ -1,0 +1,90 @@
+name: APK Litopulso (HTML)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/android-web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+        shell: bash -eo pipefail {0}
+    env:
+      LOG: /tmp/lp-build.log
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar dependencias y armar la página
+        run: |
+          { npm install --no-audit --no-fund && node scripts/prepare-www.mjs; } 2>&1 | tee -a "$LOG"
+
+      - name: Crear proyecto Android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          { npx cap add android && node scripts/patch-android.mjs && npx cap sync android; } 2>&1 | tee -a "$LOG"
+
+      - name: Firma fija (cada APK nuevo se instala encima del anterior)
+        run: |
+          mkdir -p ~/.android
+          base64 -d res/debug.keystore.b64 > ~/.android/debug.keystore
+
+      - name: Compilar APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee -a "$LOG"
+          VER=$(node -p "require('../package.json').version")
+          echo "VER=${VER%.*}" >> "$GITHUB_ENV"
+          mkdir -p ../out
+          cp app/build/outputs/apk/debug/app-debug.apk "../out/Litopulso-V${VER%.*}.apk"
+          ls -la ../out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: litopulso-html-apk
+          path: web/out/*.apk
+
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${VER}-build${{ github.run_number }}"
+          gh release create "$TAG" out/*.apk \
+            --repo "${{ github.repository }}" \
+            --title "Litopulso V${VER} · build ${{ github.run_number }}" \
+            --notes "APK para Android 7 o más nuevo. Bájalo desde el teléfono y ábrelo para instalarlo. Si ya tienes una versión anterior de esta app, se actualiza encima sin borrar tu progreso." \
+            --latest
+
+      - name: Avisar si falló
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "La compilación #${{ github.run_number }} falló. Últimas líneas del registro:"
+            echo
+            echo '```'
+            tail -c 12000 "$LOG" 2>/dev/null || echo "(sin registro)"
+            echo '```'
+          } > /tmp/issue.md
+          gh issue create --repo "${{ github.repository }}" --title "Falló la compilación del APK #${{ github.run_number }}" --body-file /tmp/issue.md
