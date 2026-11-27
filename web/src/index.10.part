@@ -1,0 +1,139 @@
+function pvpTick() {
+  if (!PVP.code) return;
+  const now = Date.now();
+  if (PVP.state === 'wait') {
+    pvpStatus();
+    if (PVP.role === 'g') pvpSend({ t: 'hello', sid: NET.me, name: pname, b: PVP.myB, v: 9 });
+    return;
+  }
+  if (PVP.role === 'h' && PVP.okRound !== PVP.round && PVP.state === 'play') pvpSend({ t: 'start', to: PVP.sid, seed: PVP.seed, arena: PVP.arena, name: pname, b: PVP.myB });
+  if (PVP.mine && !PVP.acked[PVP.mine.turn]) pvpSend(Object.assign({ t: 'pick' }, PVP.mine));
+  if (PVP.againMe && !PVP.on) pvpSend({ t: 'again' });
+  if (now - PVP.lastPing > 4500) { PVP.lastPing = now; pvpSend({ t: 'ping' }); }
+  if (PVP.on && G && !G.over && !PVP.gone) {
+    const quiet = now - PVP.lastRx;
+    if (quiet > 75000) pvpOppGone('Se perdió la conexión con tu rival.');
+    else if (quiet > 15000 && PVP.mine) $('#msg').textContent = 'Tu rival no responde… esperando que se reconecte.';
+  }
+}
+function pvpDigest() {
+  const h = PVP.role === 'h' ? [G.you, G.foe] : [G.foe, G.you];
+  const s = G.turn + '|' + (G.ev ? G.ev.id + G.ev.left : '-') + '|' + (G.evNext || '-') + '|' +
+    h.map(f => [f.hp, f.maxHp, f.en, f.sc, f.lockDodge || 0, f.scNeed || 0, f.hand.map(c => c.id).join('.'), (f.locked || []).join('.')].join(',')).join('|');
+  let x = 2166136261; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); }
+  return (x >>> 0).toString(36);
+}
+// manda mi carta y espera la del rival
+function pvpExchange(card) {
+  const t = G.turn;
+  pvpClockStop();
+  PVP.mine = { turn: t, c: card.id, h: pvpDigest() };
+  pvpSend(Object.assign({ t: 'pick' }, PVP.mine));
+  return new Promise(res => {
+    const check = () => {
+      if (!PVP.on || PVP.gone || !G || G.over) { PVP.waiter = null; res(null); return; }
+      const o = PVP.picks[t]; if (!o) return;
+      PVP.waiter = null;
+      const c = o.c === 'over' ? OVER : CARDS[o.c];
+      const legal = c && (c.type === 'over' ? G.foe.sc >= overNeed(G.foe) : G.foe.hand.some(h => h.id === c.id) && can(G.foe, c));
+      if (o.h !== PVP.mine.h || !legal) { pvpDesync(); res(null); return; }
+      res(c);
+    };
+    PVP.waiter = check;
+    check();
+    if (PVP.waiter) $('#msg').textContent = 'Esperando la carta de tu rival…';
+  });
+}
+function pvpDesync() {
+  if (!G || G.over) return;
+  PVP.void = true; PVP.note = 'Los dos teléfonos dejaron de coincidir, así que la partida no cuenta.';
+  G.over = true; G.result = 'draw'; duelToken++; busy = false; showEnd();
+}
+function pvpOppGone(note) {
+  if (!PVP.code || PVP.gone) return;
+  PVP.gone = true; PVP.note = note; pvpClockStop();
+  if (PVP.state === 'wait') { pvpSay(note); return; }
+  if (PVP.on && G && !G.over && curView === 'duel') {
+    G.over = true; G.result = 'win'; duelToken++; busy = false;
+    if (PVP.waiter) PVP.waiter();
+    showEnd();
+  } else if (!$('#end').hidden) { $('#xpText').textContent = note; $('#again').disabled = true; }
+}
+function pvpClockStart() {
+  pvpClockStop(); if (!PVP.on || !G || G.over) return;
+  PVP.deadline = Date.now() + PVP_SECS * 1000;
+  const el = $('#pvpClock'); el.hidden = false;
+  const tick = () => {
+    const left = Math.max(0, Math.ceil((PVP.deadline - Date.now()) / 1000));
+    el.textContent = left + ' s'; el.classList.toggle('low', left <= 10);
+    if (left <= 0) {
+      pvpClockStop();
+      if (!busy && G && !G.over) { const o = afford(G.you).sort((a, b) => (a.type === 'over') - (b.type === 'over') || a.cost - b.cost); if (o[0]) { $('#msg').textContent = 'Se acabó el tiempo: se jugó tu carta más barata.'; play(o[0]); } }
+    }
+  };
+  tick(); PVP.clock = setInterval(tick, 250);
+}
+function pvpClockStop() { if (PVP.clock) clearInterval(PVP.clock); PVP.clock = null; const el = document.getElementById('pvpClock'); if (el) el.hidden = true; }
+function pvpShowEnd() {
+  if (PVP.ended) return; PVP.ended = true; PVP.on = false; pvpClockStop();
+  const T = { win: 'Victoria', lose: 'Derrota', draw: 'Empate' }, res = G.result;
+  if (!PVP.void) { pvpRec[res === 'win' ? 'w' : res === 'lose' ? 'l' : 'd']++; try { localStorage.setItem('duelo-pvp', JSON.stringify(pvpRec)); } catch (e) {} }
+  if (res === 'win') AU.win(); else if (res === 'lose') AU.lose();
+  const t = $('#endT'); t.textContent = PVP.void ? 'Partida anulada' : T[res]; t.className = 'end-title ' + res;
+  $('#endS').innerHTML = '<div><b>' + G.turn + '</b><small>' + (G.turn === 1 ? 'turno' : 'turnos') + '</small></div><div><b>' + G.dealt + '</b><small>daño hecho</small></div><div><b>' + G.taken + '</b><small>daño recibido</small></div>';
+  endBadge(res);
+  $('.xpbox .xpbar').hidden = true;
+  $('#xpText').textContent = PVP.note || ('En línea contra ' + PVP.opp.name + ' · tu récord: ' + pvpRec.w + '-' + pvpRec.d + '-' + pvpRec.l);
+  $('#endUp').hidden = true;
+  $('#endGarage').hidden = true;
+  $('#again').textContent = 'Revancha'; $('#again').disabled = !!PVP.gone;
+  $('#endHome').textContent = 'Salir';
+  $('#end').hidden = false;
+}
+function pvpAgain() {
+  if (PVP.gone) return;
+  AU.tap(); PVP.againMe = true; pvpSend({ t: 'again' });
+  $('#again').disabled = true; $('#again').textContent = 'Esperando a tu rival…';
+  if (PVP.againOpp && PVP.role === 'h') pvpNewRound();
+}
+function backHook() {
+  if (!$('#pvp').hidden) { pvpCancel(); return true; }
+  return false;
+}
+$('#pvpHost').addEventListener('click', pvpHost);
+$('#pvpJoin').addEventListener('click', pvpJoin);
+$('#pvpCode').addEventListener('keydown', e => { if (e.key === 'Enter') pvpJoin(); });
+$('#pvpCode').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); });
+$('#pvpClose').addEventListener('click', () => { AU.tap(); pvpCancel(); });
+
+// ===== app de Android: botón atrás, barra de estado, pausa =====
+(function () {
+  if (!NATIVE) return;
+  const APP = plug('App'), SB = plug('StatusBar');
+  try { SB && SB.setBackgroundColor({ color: '#0e1319' }).catch(() => {}); SB && SB.setStyle({ style: 'DARK' }).catch(() => {}); } catch (e) {}
+  let armed = 0;
+  const vis = id => { const el = document.getElementById(id); return el && !el.hidden; };
+  function back() {
+    if (vis('tut')) { $('#tutSkip').click(); return; }
+    for (const id of ['info', 'theme', 'rules', 'logPanel']) if (vis(id)) { $('#' + id).hidden = true; return; }
+    if (vis('storyV')) { closeStory(); return; }
+    const nav = $('#hexnav'); if (nav && nav.classList.contains('open')) { closeFan(); return; }
+    if (typeof backHook === 'function' && backHook()) return;
+    if (curView === 'garage') { $('#gBack').click(); return; }
+    if (curView === 'duel') {
+      if (vis('end')) { $('#endHome').click(); return; }
+      if (Date.now() - armed < 2200) { armed = 0; $('#quitBtn').click(); return; }
+      armed = Date.now(); $('#msg').textContent = 'Toca atrás otra vez para salir del duelo.'; buzz(20); return;
+    }
+    if (curPage !== 'home') { goPage('home'); return; }
+    APP && APP.minimizeApp && APP.minimizeApp().catch(() => {});
+  }
+  try { APP && APP.addListener('backButton', back); } catch (e) {}
+  try {
+    APP && APP.addListener('pause', () => { try { AU.ctx && AU.ctx.suspend(); } catch (e) {} });
+    APP && APP.addListener('resume', () => { try { AU.ctx && AU.on && AU.ctx.resume(); } catch (e) {} });
+  } catch (e) {}
+})();
+</script>
+
+</body></html>

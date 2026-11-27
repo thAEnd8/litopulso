@@ -1,0 +1,368 @@
+let wheelRot = 0;
+function prizeHTML(r) {
+  if (r.item) { const c = r.item; return '<div class="prize r-' + c.r + ' pop"><div class="ptile">' + (c.k === 'col' ? '<i class="sw2" style="background:' + c.v + '"></i>' : c.k === 'emb' ? emblemSVG(c.v) : '<i class="fr ' + c.v + '"></i>') + '</div><div><b>' + (r.dupf ? 'Repetido' : '¡Nuevo!') + '</b><br>' + c.n + ' · ' + RN[c.r] + '<br><small>' + (r.dupf ? '+' + r.dupf + ' fragmentos' : r.gar ? 'Garantía de 5 giros' : 'Ya está en tu colección') + '</small></div></div>'; }
+  if (r.mod) { const m = MODS[r.mod]; return '<div class="prize r-' + m.r + ' pop"><div class="big">⬢</div><div><b>' + (r.dupf ? 'Repetida' : '¡Pieza nueva!') + '</b><br>' + m.name + '<br><small>' + (r.dupf ? '+' + r.dupf + ' fragmentos' : 'Equípala en el Garaje') + '</small></div></div>'; }
+  if (r.o === 'x') return '<div class="prize pop"><div class="big">+1</div><div><b>¡Giro extra!</b><br><small>Te devuelven el ticket</small></div></div>';
+  return '<div class="prize pop"><div class="big">+' + (r.o === 'f3' ? 3 : 1) + ' ◆</div><div><b>Fragmentos</b><br><small>10 = un giro más</small></div></div>';
+}
+$('#spinBtn').addEventListener('click', () => {
+  if (spinning || col.tk <= 0) return; spinning = true; pend = '';
+  const r = spinOnce(); renderCol(); $('#colMsg').textContent = ''; $('#spinRes').innerHTML = '';
+  const opts = SLA.filter(s => s.k === r.o), pickS = opts[Math.floor(Math.random() * opts.length)];
+  const mid = pickS.mid + (Math.random() - .5) * (pickS.a1 - pickS.a0) * .7;
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, dur = reduce ? 500 : 5400;
+  wheelRot = Math.ceil(wheelRot / 360) * 360 + 360 * 7 - mid; const ww = document.querySelector('.wheelwrap'); ww.classList.add('spinning');
+  const g = $('#wheelG'); g.style.transition = 'transform ' + dur + 'ms cubic-bezier(.1,.62,.06,1)'; g.style.transform = 'rotate(' + wheelRot + 'deg)';
+  const nT = reduce ? 0 : 46; for (let k = 1; k <= nT; k++) setTimeout(() => AU.tap(), dur * (1 - Math.pow(1 - k / nT, 1 / 3)) * .98);
+  setTimeout(() => {
+    spinning = false; ww.classList.remove('spinning'); ww.style.setProperty('--wg', r.o === 'r' ? '#ff5a4a' : r.o === 'b' ? '#4fa3ff' : (r.nw || r.o === 'x') ? '#ffd34a' : '#1fb5a8'); $('#spinRes').innerHTML = prizeHTML(r); (r.nw || r.o === 'x') ? AU.win() : AU.ready();
+    $('#wheelWrap') && 0; document.querySelector('.wheelwrap').classList.add('wglow'); setTimeout(() => document.querySelector('.wheelwrap').classList.remove('wglow'), 1300);
+    renderCol();
+  }, dur + 80);
+});
+const tkUp = $('#tkUp'); if (tkUp) tkUp.addEventListener('click', () => { col.tk += 5; col.fr += 30; saveCol(); updateBadge(); });
+updateBadge();
+if (curView === 'home') renderHome();
+
+// ---- misiones (barras) ----
+function misCard(cls, name, val, max, txt, extra, marks) {
+  const p = Math.min(100, Math.round(val / max * 100)), done = val >= max;
+  const IC = { '': '◆', gold: '★', silver: '✦' }, RW = { '': '+1 ticket', gold: 'Cosmético dorado', silver: 'Cosmético plateado' };
+  const rw = /Difícil/.test(name) ? '+1 ticket' : RW[cls], ic = /Difícil/.test(name) ? '▲' : IC[cls];
+  return '<div class="mis ' + cls + (done ? ' done' : '') + '"><div class="mhx">' + ic + '</div><div class="mbd"><div class="mhd"><b>' + name + '</b>' + (done ? '<span class="lista">★ LISTA</span>' : '') + '</div><small>' + extra + '</small><div class="mtrack"><i style="width:' + p + '%"></i>' + (marks || '') + '</div><div class="mrw"><span>' + txt + '</span><em>' + rw + '</em></div></div></div>';
+}
+function renderMis() {
+  checkAuto(); saveCol();
+  const t = col.md === today(), mn = t ? col.mn : 0, st = starsOf(xp), sv = Math.min(6, st + starProg(xp) / 100);
+  const mk = [2, 4, 6].map(n => '<u class="' + (st >= n ? 'ok' : '') + '" style="left:' + (n / 6 * 100) + '%">' + n + '</u>').join('');
+  const g = (id, name, v, m, hint) => misCard('gold', name, v, m, Math.min(v, m) + '/' + m, col.own[id] ? '<span class="got">Cosmético dorado conseguido</span>' : hint);
+  $('#misTop').innerHTML = '<div class="rs"><b>' + mn + '</b><small>Duelos hoy</small></div><div class="rs"><b>' + col.tk + '</b><small>Tickets</small></div><div class="rs"><b>' + col.hp + '/' + HARD_PTS + '</b><small>Puntos para ticket</small></div>';
+  $('#misList').innerHTML =
+    misCard('', 'Misión diaria', mn, NORM_NEED, Math.min(mn, NORM_NEED) + '/' + NORM_NEED, 'Juega ' + NORM_NEED + ' duelos en Normal hoy. Premio: 1 ticket para la ruleta. Se reinicia cada día.') +
+    misCard('', 'Gana tickets en Difícil', col.hp, HARD_PTS, col.hp + '/' + HARD_PTS, 'Cada duelo en Difícil da puntos: ganar 3, empatar 2, perder 1. Con ' + HARD_PTS + ' puntos ganas 1 ticket.') +
+    g('au_petreo', 'Pétreo dorado', col.w.petreo, 25, 'Gana 25 duelos en Difícil con Pétreo.') +
+    g('au_granito', 'Granito dorado', col.w.granito, 15, 'Gana 15 duelos en Difícil con Granito.') +
+    g('au_cuarzo', 'Cuarzo dorado', col.cq, 10, 'Gana 10 duelos en Difícil con Cuarzo terminando con menos de 20 de vida.') +
+    misCard('silver', 'Plateados por estrellas', sv, 6, st + ' ★', 'Un cosmético plateado cada 2 estrellas (2, 4 y 6). Cada estrella son 100 XP después del nivel 10.', mk);
+}
+$('#openColl').addEventListener('click', () => { AU.tap(); openCol(); });
+// ===== navegación: pantallas que se deslizan + núcleo hexagonal =====
+var curPage = 'home';
+const PGID = { his: 'pgHis', home: 'pgHome', mis: 'pgMis', col: 'pgCol', mer: 'pgMer', prof: 'pgProf', aj: 'pgAj' }, PGS = ['mer', 'his', 'home', 'mis', 'prof', 'aj'];
+const NI = {
+  his: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/>',
+  home: '<path d="M8 5l11 7-11 7z"/>', rules: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>', garage: '<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5" stroke-dasharray="3 2.6"/>',
+  mis: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/>', col: '<path d="M12 3l2.2 6.3L21 12l-6.8 2.7L12 21l-2.2-6.3L3 12l6.8-2.7z"/>',
+  mer: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  prof: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 5-7 8-7s7 2 8 7"/>', aj: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
+};
+const FAN = [['garage', 'Garaje'], ['mer', 'Mercado'], ['his', 'Historia'], ['home', 'Jugar'], ['mis', 'Misiones'], ['prof', 'Perfil'], ['aj', 'Ajustes']];
+function pagerEl() { return document.getElementById('pager'); }
+function updateNav() {
+  document.querySelectorAll('.hx').forEach(h => h.classList.toggle('cur', h.dataset.go === curPage));
+  document.querySelectorAll('.hexdots i').forEach((d, i) => d.classList.toggle('cur', PGS[i] === curPage));
+}
+function onPage(n) {
+  if (n === curPage) return; curPage = n; updateNav(); AU.nav();
+  if (n === 'home') renderHome(); else if (n === 'his') renderHis(); else if (n === 'mis') renderMis(); else if (n === 'col') renderCol(); else if (n === 'mer') { renderMer(); renderCol(); } else if (n === 'prof') { renderProfile(); renderCol(); }
+}
+function goPage(n, instant) {
+  if (n === 'col') n = 'mer';
+  if (curView !== 'home') show('home');
+  closeFan(); const p = pagerEl(), el = document.getElementById(PGID[n]); if (!p || !el) return;
+  p.scrollTo({ left: el.offsetLeft, behavior: instant ? 'auto' : 'smooth' }); onPage(n);
+}
+{ const _op = onPage; onPage = function (n) { _op(n); if (n === 'his') setTimeout(() => { if (curView === 'home') runTut(TUT_HIST, 'hist'); }, 500); }; }
+(function build() {
+  const nav = document.createElement('nav'); nav.className = 'hexnav'; nav.id = 'hexnav'; nav.setAttribute('aria-label', 'Menú');
+  nav.innerHTML = '<div class="hexshade" id="hexshade"></div>' +
+    FAN.map(([k, n]) => '<button class="hx' + (k === 'home' ? ' main' : '') + '" data-go="' + k + '" aria-label="' + n + '"><span class="hxin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + NI[k] + '</svg>' + (k === 'col' ? '<i class="bdg" id="tkBadge" hidden></i>' : '') + '</span><em>' + n + '</em></button>').join('') +
+    '<div class="hexdots" aria-hidden="true">' + PGS.map(() => '<i></i>').join('') + '</div>' +
+    '<button class="nucleo" id="nucleoBtn" aria-label="Abrir menú" aria-expanded="false"><span class="ni"></span><b></b></button>';
+  document.getElementById('homeView').appendChild(nav);
+})();
+function openFan() {
+  const nav = $('#hexnav'); nav.classList.add('open'); $('#nucleoBtn').setAttribute('aria-expanded', 'true');
+  const hs = nav.querySelectorAll('.hx'), r = 140;
+  hs.forEach((h, i) => { const hi = FAN.findIndex(x => x[0] === 'home'), a = (90 + (hi - i) * 25) * Math.PI / 180; h.style.setProperty('--x', (r * Math.cos(a)).toFixed(0) + 'px'); h.style.setProperty('--y', (-r * Math.sin(a) - 6).toFixed(0) + 'px'); h.style.transitionDelay = (i * 30) + 'ms'; });
+}
+function closeFan() { const nav = $('#hexnav'); if (!nav) return; nav.classList.remove('open'); $('#nucleoBtn').setAttribute('aria-expanded', 'false'); }
+$('#nucleoBtn').addEventListener('click', () => { AU.tap(); $('#hexnav').classList.contains('open') ? closeFan() : openFan(); });
+$('#hexshade').addEventListener('click', closeFan);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFan(); });
+$('#hexnav').addEventListener('click', e => {
+  const h = e.target.closest('.hx'); if (!h) return; AU.tap(); const k = h.dataset.go;
+  if (k === 'garage') { closeFan(); openGarage(); } else if (k === 'rules') { closeFan(); $('#rules').hidden = false; $('#closeRules').focus(); } else goPage(k);
+});
+let scrT = 0;
+pagerEl().addEventListener('scroll', () => { clearTimeout(scrT); scrT = setTimeout(() => { const p = pagerEl(), i = Math.round(p.scrollLeft / Math.max(1, p.clientWidth)); if (PGS[i]) onPage(PGS[i]); }, 90); }, { passive: true });
+const _show = show;
+show = function (v) { _show(v); if (v === 'home') { curPage = 'home'; const p = pagerEl(), hp = document.getElementById('pgHome'); if (p && hp) p.scrollLeft = hp.offsetLeft; closeFan(); updateNav(); } };
+function refreshNucleo() { try { $('#hexnav').style.setProperty('--nc', coreColor(build.robot, levelOf(xp).level)); } catch (e) {} }
+const _rh = renderHome; renderHome = function () { _rh(); refreshNucleo(); };
+{ const hp = document.getElementById('pgHome'); if (hp) pagerEl().scrollLeft = hp.offsetLeft; }
+refreshNucleo(); updateNav(); updateBadge();
+
+const NAVS = ['bar', 'fan', 'side', 'fab'], NM = ' Jugar va en el centro; a los lados están Garaje, Mercado, Ruleta, Misiones, Perfil (con tu colección) y Ajustes.';
+const NAVTXT = { bar: 'Este es tu menú.' + NM + ' También puedes deslizar de lado.', fan: 'Este es tu núcleo: tócalo para abrir el menú.' + NM + ' También puedes deslizar de lado.', side: 'Este botón abre el menú.' + NM + ' También puedes deslizar de lado.', fab: 'Este botón abre el menú.' + NM + ' También puedes deslizar de lado.' };
+function setNav(m, save) {
+  if (NAVS.indexOf(m) < 0) m = 'bar';
+  closeFan(); document.documentElement.dataset.nav = m; $('#hexnav').dataset.nav = m;
+  $$('#navOpts [data-nav]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.nav === m)));
+  if (save) { try { localStorage.setItem('duelo-nav', m); } catch (e) {} }
+}
+$('#navOpts').addEventListener('click', e => { const b = e.target.closest('[data-nav]'); if (!b) return; AU.tap(); setNav(b.dataset.nav, true); });
+{ let m = 'bar'; try { m = localStorage.getItem('duelo-nav') || 'bar'; } catch (e) {} setNav(m, false); }
+
+const STORY = [
+  { t: 'Después de la explosión', p: ['Nadie sabe del todo qué se halló en la instalación. Lo que todos saben es lo que vino después: una explosión de energía tan grande que alcanzó a toda la humanidad. El lugar quedó marcado con un nombre: HEXX.', 'Las personas siguieron siendo en gran parte humanas, pero algo cambió dentro de ellas. En algún lugar del cuerpo les creció un núcleo de cristal.'] },
+  { t: 'El núcleo y la pulsera', p: ['Cada núcleo nace con un mineral que nunca cambia. Con el tiempo solo cambia de color, del más claro al más oscuro, a medida que su dueño entrena y gana experiencia. Con él se pueden convertir partes del cuerpo en piedra o cristal y manipular energía.', 'Un año después llegaron las pulseras. La pulsera extrae la energía del núcleo y es tu menú; el canalizador, un pequeño robot, la recibe para desplegarse y combatir.'] },
+  { t: 'La grieta del Hexx', p: ['Los enfrentamientos empezaron como peleas de energía pura y después se volvieron competencias con reglas. Tener más energía no es dominarla mejor: gana quien anticipa al rival, no quien tiene más.', 'Tú venciste al guardián de la grieta. El HEXX sigue vigilado y lo que hay en su origen sigue sin respuesta, pero tu núcleo ya no brilla igual que antes.'] }
+];
+let stI = 0;
+function renderStory() {
+  const end = stI >= STORY.length;
+  $('#storyBody').innerHTML = end
+    ? '<small>Fin del capítulo 1</small><h3>¿Qué quieres hacer?</h3><button class="btn" id="stPlay">Volver a jugar</button><button class="btn ghost" id="stAgain">Volver a leer la historia</button>'
+    : '<small>Parte ' + (stI + 1) + ' de ' + STORY.length + '</small><h3>' + STORY[stI].t + '</h3>' + STORY[stI].p.map(x => '<p>' + x + '</p>').join('');
+  $('#storyNav').hidden = end; $('#stPrev').style.visibility = stI === 0 ? 'hidden' : 'visible';
+  $('#stNext').textContent = stI === STORY.length - 1 ? 'Terminar' : 'Siguiente';
+}
+function openStory() { stI = 0; renderStory(); $('#storyV').hidden = false; }
+function closeStory() { $('#storyV').hidden = true; }
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'storyBtn') { AU.tap(); openStory(); }
+  else if (t.id === 'stClose') { AU.tap(); closeStory(); }
+  else if (t.id === 'stNext') { AU.tap(); stI++; renderStory(); }
+  else if (t.id === 'stPrev') { AU.tap(); stI = Math.max(0, stI - 1); renderStory(); }
+  else if (t.id === 'stAgain') { AU.tap(); stI = 0; renderStory(); }
+  else if (t.id === 'stPlay') { AU.tap(); closeStory(); goPage('home'); }
+});
+
+const EVSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v5M12 18v.01"/></svg>';
+let evPopT = null;
+function showEvPop(id, up) {
+  const p = $('#evPop'); p.innerHTML = EVSVG + '<b>' + EVENTS[id].name + '</b><small>' + (up ? 'Empieza el próximo turno. ' : '') + EVENTS[id].text + '</small>';
+  p.hidden = false; p.style.animation = 'none'; void p.offsetWidth; p.style.animation = '';
+  AU.evt(); buzz([40, 40, 40]); clearTimeout(evPopT); evPopT = setTimeout(() => { p.hidden = true; }, 3000);
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#evMini')) { $('#evMini').hidden = true; return; }
+  if (!e.target.closest('#evBox') || !G) return;
+  const id = G.ev ? G.ev.id : G.evNext; if (!id) return;
+  const m = $('#evMini'); AU.tap();
+  m.innerHTML = '<b>' + EVSVG + EVENTS[id].name + (G.ev ? ' · ' + G.ev.left + ' turno' + (G.ev.left > 1 ? 's' : '') : ' · empieza el próximo turno') + '</b>' + EVENTS[id].text + '<small>Toca para cerrar</small>';
+  m.hidden = !m.hidden;
+});
+
+document.addEventListener('click', e => {
+  const pm = $('#passMini');
+  if (e.target.closest('#passMini')) { pm.hidden = true; return; }
+  const t = e.target.closest('#you-rob, #foe-rob, #you .stats, #foe .stats'); if (!t || !G) return;
+  const side = (t.id === 'foe-rob' || t.closest('#foe')) ? 'foe' : 'you', f = G[side];
+  pm.innerHTML = '<b>' + ROBOTS[f.robot].name + ': pasivas y módulos</b>' + f.passives.map(p => '<p><span>' + PASSIVES[p].short + '</span> ' + PASSIVES[p].text + '</p>').join('') + (f.mods || []).filter(i => MODS[i]).map(id => '<p><span>' + MODS[id].name + '</span> ' + MODS[id].pro + ' ' + MODS[id].con + '</p>').join('') + '<small>Toca para cerrar</small>';
+  AU.tap(); pm.hidden = !pm.hidden;
+});
+
+const MGLY = { head: '◆', body: '■', legs: '▲', spec: '★' };
+
+// ===== duelo en línea (PvP) =====
+// Cada teléfono corre el mismo motor con la misma semilla; solo viajan las cartas elegidas.
+// Los mensajes pasan por servidores MQTT públicos y gratuitos (dos a la vez, por si uno falla).
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+const NET = (() => {
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  let qsb = null; try { qsb = new URLSearchParams(location.search).get('broker'); } catch (e) {}
+  const URLS = qsb ? [qsb] : ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+  const me = Math.random().toString(36).slice(2, 10);
+  let conns = [], subs = [], onMsg = null, onState = null, seen = new Set(), seq = 0;
+  const str = s => { const b = enc.encode(s); return [b.length >> 8, b.length & 255, ...b]; };
+  function pkt(type, body) {
+    const len = []; let n = body.length;
+    do { let d = n % 128; n = Math.floor(n / 128); if (n > 0) d |= 128; len.push(d); } while (n > 0);
+    return new Uint8Array([type, ...len, ...body]);
+  }
+  const report = () => { onState && onState(conns.some(c => c.ok)); };
+  function sub(c, t) { const id = (c.pid++ & 0xffff) || 1; c.ws.send(pkt(0x82, [id >> 8, id & 255, ...str(t), 0])); }
+  function got(txt) {
+    let m; try { m = JSON.parse(txt); } catch (e) { return; }
+    if (!m || !m.k || seen.has(m.k)) return;
+    seen.add(m.k); if (seen.size > 600) seen = new Set([...seen].slice(-300));
+    onMsg && onMsg(m);
+  }
+  function parse(c) {
+    for (;;) {
+      const b = c.buf; if (b.length < 2) return;
+      let mul = 1, len = 0, i = 1, d;
+      do { if (i >= b.length) return; d = b[i++]; len += (d & 127) * mul; mul *= 128; } while (d & 128);
+      if (b.length < i + len) return;
+      const head = b[0], body = b.subarray(i, i + len);
+      c.buf = b.slice(i + len);
+      const type = head >> 4;
+      if (type === 2) {
+        if (body[1] === 0) {
+          c.ok = true; subs.forEach(t => sub(c, t));
+          clearInterval(c.ping); c.ping = setInterval(() => { try { c.ws.send(new Uint8Array([0xC0, 0])); } catch (e) {} }, 20000);
+          report();
+        }
+      } else if (type === 3) {
+        const tl = body[0] << 8 | body[1]; let off = 2 + tl; if ((head >> 1 & 3) > 0) off += 2;
+        got(dec.decode(body.subarray(off)));
+      }
+    }
+  }
+  function open(url) {
+    const c = { url, ws: null, ok: false, buf: new Uint8Array(0), ping: null, pid: 1, dead: false };
+    const retry = () => { if (!c.dead) setTimeout(start, 2500); };
+    function start() {
+      if (c.dead) return;
+      let ws; try { ws = new WebSocket(url, 'mqtt'); } catch (e) { retry(); return; }
+      c.ws = ws; ws.binaryType = 'arraybuffer'; c.buf = new Uint8Array(0);
+      ws.onopen = () => { try { ws.send(pkt(0x10, [...str('MQTT'), 4, 2, 0, 40, ...str('lp9' + me + Math.random().toString(36).slice(2, 7))])); } catch (e) {} };
+      ws.onmessage = e => { const d = new Uint8Array(e.data), nb = new Uint8Array(c.buf.length + d.length); nb.set(c.buf); nb.set(d, c.buf.length); c.buf = nb; try { parse(c); } catch (x) {} };
+      ws.onclose = () => { const was = c.ok; c.ok = false; clearInterval(c.ping); if (was) report(); retry(); };
+      ws.onerror = () => { try { ws.close(); } catch (e) {} };
+    }
+    c.close = () => { c.dead = true; c.ok = false; clearInterval(c.ping); try { c.ws && c.ws.close(); } catch (e) {} };
+    start();
+    return c;
+  }
+  return {
+    me,
+    get up() { return conns.some(c => c.ok); },
+    start(topics, msgCb, stateCb) { this.stop(); subs = topics; onMsg = msgCb; onState = stateCb; conns = URLS.map(open); },
+    pub(topic, obj) {
+      obj.k = me + ':' + (++seq);
+      const p = pkt(0x30, [...str(topic), ...enc.encode(JSON.stringify(obj))]);
+      conns.forEach(c => { if (c.ok) try { c.ws.send(p); } catch (e) {} });
+    },
+    stop() { conns.forEach(c => c.close()); conns = []; subs = []; onMsg = onState = null; }
+  };
+})();
+
+const PVP_SECS = 40, ROOM_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+let PVP = { on: false, state: 'idle' };
+let pvpRec = { w: 0, d: 0, l: 0 };
+try { const r = JSON.parse(localStorage.getItem('duelo-pvp')); if (r && typeof r.w === 'number') pvpRec = r; } catch (e) {}
+const pvpTopic = (code, role) => 'litopulso9/' + code + '/' + role;
+const cleanName = s => String(s || 'Rival').replace(/[<>&"]/g, '').slice(0, 14) || 'Rival';
+
+function pvpBuildOk(b) {
+  if (!b || !ROBOTS[b.robot] || !Array.isArray(b.cards) || !Array.isArray(b.passives)) return false;
+  if (b.cards.length < 3 || b.cards.length > 5 || new Set(b.cards).size !== b.cards.length || b.cards.some(id => !CARDS[id])) return false;
+  if (b.passives.length !== CFG.passiveSlots || b.passives.some(id => !PASSIVES[id] || PASSIVES[id].robot !== b.robot)) return false;
+  return true;
+}
+function pvpView(v) {
+  $('#pvpMenu').hidden = v !== 'menu';
+  $('#pvpWait').hidden = v !== 'wait';
+  $('#pvpClose').textContent = v === 'menu' ? 'Cerrar' : 'Cancelar';
+}
+function pvpSay(t) { $('#pvpErr').textContent = t || ''; }
+function pvpOpen() {
+  AU.tap(); pvpSay('');
+  $('#pvpRec').textContent = 'Tu récord en línea: ' + pvpRec.w + ' ganadas · ' + pvpRec.d + ' empates · ' + pvpRec.l + ' perdidas.';
+  pvpView('menu'); $('#pvp').hidden = false;
+}
+function pvpSend(o) { if (PVP.code) NET.pub(pvpTopic(PVP.code, PVP.role), Object.assign({ r: PVP.round || 0 }, o)); }
+function pvpReset() {
+  clearInterval(PVP.tick); pvpClockStop();
+  PVP = { on: false, state: 'idle', round: 0, picks: {}, acked: {}, mine: null, lastRx: Date.now(), lastPing: 0 };
+}
+function pvpStartNet() {
+  PVP.myB = { robot: build.robot, cards: build.cards.slice(), passives: build.passives.slice() };
+  PVP.lastRx = Date.now(); PVP.t0 = Date.now();
+  NET.start([pvpTopic(PVP.code, PVP.role === 'h' ? 'g' : 'h')], pvpMsg, up => { PVP.netUp = up; pvpStatus(); });
+  PVP.tick = setInterval(pvpTick, 1500);
+  pvpStatus();
+}
+function pvpStatus() {
+  if (PVP.state !== 'wait') return;
+  const st = $('#pvpSt'), long = Date.now() - PVP.t0 > 12000;
+  if (!NET.up) st.textContent = long ? 'No logro conectarme. Revisa que tengas internet.' : 'Conectando…';
+  else if (PVP.role === 'h') st.textContent = 'Esperando a que tu rival escriba el código…';
+  else st.textContent = long ? 'No encuentro la sala ' + PVP.code + '. Revisa el código o que tu rival siga en la sala.' : 'Buscando la sala…';
+}
+function pvpHost() {
+  const bad = validBuild(build); if (bad) { pvpSay(bad + ' Arréglalo en el Garaje.'); return; }
+  AU.tap(); pvpReset();
+  let c = ''; for (let i = 0; i < 4; i++) c += ROOM_ABC[Math.floor(Math.random() * ROOM_ABC.length)];
+  PVP.role = 'h'; PVP.code = c; PVP.state = 'wait';
+  $('#pvpWaitT').textContent = 'Comparte este código con tu rival:';
+  $('#pvpShow').textContent = c; pvpView('wait'); pvpSay('');
+  pvpStartNet();
+}
+function pvpJoin() {
+  const c = ($('#pvpCode').value || '').toUpperCase().replace(/[^A-Z]/g, '');
+  if (c.length !== 4) { pvpSay('El código tiene 4 letras.'); return; }
+  const bad = validBuild(build); if (bad) { pvpSay(bad + ' Arréglalo en el Garaje.'); return; }
+  AU.tap(); pvpReset();
+  PVP.role = 'g'; PVP.code = c; PVP.state = 'wait';
+  $('#pvpWaitT').textContent = 'Uniéndote a la sala';
+  $('#pvpShow').textContent = c; pvpView('wait'); pvpSay('');
+  pvpStartNet();
+}
+function pvpCancel() {
+  const was = PVP.code, topic = was ? pvpTopic(PVP.code, PVP.role) : null, r = PVP.round || 0;
+  if (was) { NET.pub(topic, { t: 'bye', r }); setTimeout(() => NET.pub(topic, { t: 'bye', r }), 250); }
+  pvpReset(); $('#pvp').hidden = true;
+  if (was) setTimeout(() => { if (!PVP.code) NET.stop(); }, 700);
+}
+function pvpLeave() { if (PVP.code) pvpCancel(); }
+
+function pvpNewRound() {
+  PVP.round = (PVP.round || 0) + 1;
+  PVP.seed = Math.floor(Math.random() * 4294967296) >>> 0;
+  PVP.arena = selArena;
+  PVP.okRound = 0;
+  pvpSend({ t: 'start', to: PVP.sid, seed: PVP.seed, arena: PVP.arena, name: pname, b: PVP.myB });
+  pvpBegin();
+}
+function pvpBegin() {
+  PVP.state = 'play'; PVP.on = true; PVP.picks = {}; PVP.acked = {}; PVP.mine = null;
+  PVP.againMe = PVP.againOpp = false; PVP.gone = false; PVP.note = ''; PVP.ended = false; PVP.void = false;
+  PVP.lastRx = Date.now();
+  $('#pvp').hidden = true; $('#end').hidden = true;
+  startDuel();
+}
+function pvpMsg(m) {
+  PVP.lastRx = Date.now();
+  if (m.t === 'ping') return;
+  if (m.t === 'bye') { pvpOppGone('Tu rival salió del duelo.'); return; }
+  if (PVP.role === 'h') {
+    if (m.t === 'hello') {
+      if (PVP.sid && PVP.sid !== m.sid) return;
+      if (!pvpBuildOk(m.b)) { pvpSay('El equipo de tu rival no es válido.'); return; }
+      if (!PVP.sid) { PVP.sid = m.sid; PVP.opp = { name: cleanName(m.name), b: m.b }; pvpNewRound(); }
+      else if (PVP.okRound !== PVP.round) pvpSend({ t: 'start', to: PVP.sid, seed: PVP.seed, arena: PVP.arena, name: pname, b: PVP.myB });
+      return;
+    }
+    if (m.t === 'ok' && m.r === PVP.round) { PVP.okRound = m.r; return; }
+  } else {
+    if (m.t === 'start' && m.to === NET.me && m.r > (PVP.round || 0)) {
+      if (!pvpBuildOk(m.b)) { pvpSay('El equipo de tu rival no es válido.'); return; }
+      PVP.round = m.r; PVP.seed = m.seed >>> 0; PVP.arena = Math.min(5, Math.max(1, m.arena | 0)); PVP.opp = { name: cleanName(m.name), b: m.b };
+      pvpSend({ t: 'ok' });
+      pvpBegin();
+      return;
+    }
+    if (m.t === 'start' && m.to === NET.me && m.r === PVP.round) { pvpSend({ t: 'ok' }); return; }
+  }
+  if (m.r !== PVP.round) return;
+  if (m.t === 'pick') {
+    pvpSend({ t: 'ack', turn: m.turn });
+    if (!PVP.picks[m.turn]) {
+      PVP.picks[m.turn] = m;
+      if (G && !G.over && m.turn === G.turn && (!PVP.mine || PVP.mine.turn !== G.turn)) { setSlot($('#slotFoe'), 'back ready', '✓'); $('#msg').textContent = 'Tu rival ya eligió.'; }
+      PVP.waiter && PVP.waiter();
+    }
+  } else if (m.t === 'ack') {
+    PVP.acked[m.turn] = true;
+  } else if (m.t === 'again') {
+    PVP.againOpp = true;
+    if (!$('#end').hidden && !PVP.againMe) $('#xpText').textContent = 'Tu rival quiere la revancha.';
+    if (PVP.againMe && PVP.role === 'h') pvpNewRound();
+  }
+}
