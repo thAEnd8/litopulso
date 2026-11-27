@@ -1,0 +1,101 @@
+@@ 3100 3100 99
+function guideEnd() {
+  const won = G.result === 'win';
+  guideStop(); guideDone();
+  $('#endT').textContent = won ? '¡Primer duelo ganado!' : 'Duelo terminado'; $('#endT').className = 'end-title ' + G.result;
+  $('#endS').innerHTML = '<div><b>' + G.turn + '</b><small>turnos</small></div><div><b>' + G.dealt + '</b><small>daño hecho</small></div><div><b>' + G.taken + '</b><small>daño recibido</small></div>';
+  endBadge(G.result); if (won) AU.win();
+  $('.xpbox .xpbar').hidden = true; $('#xpText').textContent = 'Tu pulsera ya funciona. Ahora te enseño dónde está cada cosa.';
+  $('#endUp').hidden = true; $('#endGarage').hidden = true;
+  $('#again').hidden = true; $('#endHome').textContent = 'Continuar';
+  $('#end').hidden = false;
+  GUIDE.post = true;
+}
+function guidePost() {
+  $('#again').hidden = false;
+  runTut([
+    { t: 'Aquí, en el Hexx, buscas rivales en línea. Ganar te da Pulso para avanzar hacia el centro.', sel: '#tabbar [data-go=home]', pos: 'top' },
+    { t: 'Y aquí, en el Garaje, armas tu equipo: robot, cartas y pasivas. ¡Suerte!', sel: '#tabbar [data-go=gar]', pos: 'top' }
+  ], 'post');
+}
+TUT_KEYS.post = 'lito-tut-post';
+$('#endHome').addEventListener('click', () => { if (GUIDE.post) { GUIDE.post = false; try { localStorage.removeItem('lito-tut-post'); } catch (e) {} goPage('home', true); setTimeout(guidePost, 450); } });
+
+// ---- minicómic de bienvenida ----
+var INTRO = { on: false };
+function introHTML() {
+  const core = (getComputedStyle(document.documentElement).getPropertyValue('--you') || '').trim() || '#3fd9d2';
+  return '<div class="com" id="com" role="dialog" aria-label="Bienvenida">' +
+  '<button class="comskip" id="comSkip">Saltar</button>' +
+  '<div class="cpage">' +
+  '<div class="cp p1"><svg viewBox="0 0 300 120" aria-hidden="true"><rect width="300" height="120" fill="#0b1220"/><circle cx="236" cy="96" r="38" fill="#ff7a3a" opacity=".18"/><circle cx="236" cy="96" r="18" fill="#ffb15a" opacity=".35"/>' +
+  '<path d="M0 120V84h18V70h14v14h10V60h20v24h12V74h16v46zM112 120V80h16V64h22v20h14V72h18v48zM196 120V90h12V78h20v42z" fill="#141c2b"/>' +
+  '<g class="drone"><rect x="-14" y="-4" width="28" height="6" rx="3" fill="#5d6b7c"/><path d="M-20 -7h12M8 -7h12" stroke="#9aa8b8" stroke-width="2"/><rect x="-8" y="4" width="16" height="12" rx="2" fill="#c89a5b"/><path d="M-8 9h16" stroke="#8a6a3a"/></g></svg>' +
+  '<p class="cap">Tres años después del pulso del HEXX…</p></div>' +
+  '<div class="cp p2"><svg viewBox="0 0 140 120" aria-hidden="true"><rect width="140" height="120" fill="#121a26"/><rect x="38" y="10" width="64" height="94" rx="3" fill="#1d2735"/><circle cx="92" cy="60" r="3" fill="#9aa8b8"/><rect x="20" y="104" width="100" height="16" fill="#0e141d"/>' +
+  '<g class="box"><rect x="48" y="78" width="44" height="28" rx="3" fill="#c89a5b"/><path d="M48 88h44M70 78v28" stroke="#8a6a3a" stroke-width="2"/></g></svg><span class="sfx">¡TUM!</span><p class="cap">Llegó tu pulsera.</p></div>' +
+  '<div class="cp p3"><svg viewBox="0 0 140 120" aria-hidden="true"><rect width="140" height="120" fill="#0f1622"/><g class="rays" stroke="' + core + '" stroke-width="2" opacity=".5"><path d="M70 60L70 8M70 60L120 30M70 60L20 30M70 60L128 70M70 60L12 70"/></g>' +
+  '<rect x="44" y="76" width="52" height="30" rx="3" fill="#c89a5b"/><path d="M40 76l16-12h28l16 12z" fill="#a57c45"/><g class="bra"><ellipse cx="70" cy="52" rx="22" ry="9" fill="none" stroke="#9aa8b8" stroke-width="6"/><polygon points="' + hexPts(7, 70, 44) + '" fill="#1d2530" stroke="' + core + '" stroke-width="2"/></g></svg><p class="cap">Con tu nombre grabado.</p></div>' +
+  '</div>' +
+  '<div class="cp big p4" id="comArm"><svg viewBox="0 0 300 190" aria-hidden="true"><rect width="300" height="190" fill="#0c121b"/><circle class="glow" cx="150" cy="95" r="70" fill="' + core + '" opacity="0"/>' +
+  '<path d="M-10 140 C60 120 110 104 150 100 C190 96 250 104 310 112 L310 170 C250 160 190 154 150 156 C110 158 60 168 -10 186Z" fill="#7a6656"/>' +
+  '<rect x="118" y="92" width="64" height="66" rx="10" fill="#2a3442" stroke="#465468" stroke-width="2"/><rect x="128" y="104" width="44" height="40" rx="6" fill="#0b1016"/>' +
+  '<polygon class="bcore" points="' + hexPts(14, 150, 124) + '" fill="#1d2530" stroke="#465468" stroke-width="2"/><circle class="ring r1" cx="150" cy="124" r="18" fill="none" stroke="' + core + '" stroke-width="3" opacity="0"/><circle class="ring r2" cx="150" cy="124" r="18" fill="none" stroke="' + core + '" stroke-width="2" opacity="0"/></svg>' +
+  '<span class="sfx on2">¡CLIC!</span><p class="cap" id="comCap">Toca la pulsera para encenderla</p></div>' +
+  '<div class="cp big p5" id="comAsk" hidden><div class="holo" aria-hidden="true"><svg viewBox="-40 -40 80 80"><polygon points="' + hexPts(32, 0, 0) + '" fill="none" stroke="' + core + '" stroke-width="3"/><polygon points="' + hexPts(24, 0, 0) + '" fill="' + core + '" opacity=".12"/><rect x="-13" y="-6" width="8" height="10" rx="3" fill="' + core + '"/><rect x="5" y="-6" width="8" height="10" rx="3" fill="' + core + '"/><path d="M-8 12q8 5 16 0" stroke="' + core + '" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div>' +
+  '<div class="bubble" id="comSay">Hola, soy <b>P.I.D.</b>, tu Programa Interno Didáctico. Tu pulsera ya está conectada. ¿Cómo te llamas?</div>' +
+  '<div class="cform" id="comForm"><input class="field" id="comName" maxlength="14" autocomplete="off" placeholder="Tu nombre de jugador" aria-label="Tu nombre de jugador"><button class="btn" id="comOk">Listo</button></div>' +
+  '<div class="cid" id="comId" hidden></div></div>' +
+  '</div>';
+}
+function introStart() {
+  if (INTRO.on) return;
+  INTRO = { on: true, lit: false };
+  const d = document.createElement('div'); d.innerHTML = introHTML(); document.body.appendChild(d.firstChild);
+  $('.tut-body > b').textContent = ASSIST;
+  const com = $('#com');
+  requestAnimationFrame(() => com.classList.add('go'));
+  setTimeout(() => { AU.init(); }, 0);
+  const lightUp = () => {
+    if (INTRO.lit) return; INTRO.lit = true; AU.init(); AU.ready(); buzz([30, 40, 90]);
+    $('#comArm').classList.add('lit'); $('#comCap').textContent = '¡Encendida!';
+    setTimeout(() => { $('#comArm').classList.add('away'); $('#comAsk').hidden = false; requestAnimationFrame(() => { $('#comAsk').classList.add('in'); try { $('#comAsk').scrollIntoView({ block: 'end', behavior: RM ? 'auto' : 'smooth' }); } catch (e) {} }); const nm = $('#comName'); if (pname && pname !== 'Jugador') nm.value = pname; setTimeout(() => { try { nm.focus(); } catch (e) {} }, 500); }, 1500);
+  };
+  $('#comArm').addEventListener('click', lightUp);
+  const okName = () => {
+    const v = ($('#comName').value || '').trim().replace(/[<>&"#]/g, '').slice(0, 14);
+    if (!v) { $('#comSay').innerHTML = 'Escribe un nombre para tu pulsera (hasta 14 letras).'; return; }
+    pname = v; try { localStorage.setItem('duelo-name', pname); } catch (e) {}
+    AU.tap();
+    $('#comForm').hidden = true;
+    $('#comSay').innerHTML = 'Mucho gusto, <b>' + pname + '</b>. Este es tu ID: así te reconocen en el Hexx aunque haya otro ' + pname + '.';
+    const id = $('#comId'); id.hidden = false; id.innerHTML = '<span>' + pname + '<em>#' + ptag + '</em></span><button class="btn" id="comGo">Probar mi pulsera</button>';
+    $('#comGo').addEventListener('click', () => { AU.tap(); introEnd(true); });
+  };
+  $('#comOk').addEventListener('click', okName);
+  $('#comName').addEventListener('keydown', e => { if (e.key === 'Enter') okName(); });
+  $('#comSkip').addEventListener('click', () => { AU.tap(); if (!INTRO.lit) { lightUp(); return; } introEnd(false); });
+}
+function introEnd(play) {
+  try { localStorage.setItem('lito-intro', '1'); } catch (e) {}
+  const com = $('#com'); if (com) { com.classList.add('out'); setTimeout(() => com.remove(), 450); }
+  INTRO.on = false;
+  renderHome();
+  if (play) setTimeout(guideStart, 350);
+  else { guideDone(); setTimeout(guidePost, 500); }
+}
+
+// ---- perfil: ID y récord en el Hexx ----
+{ const _rp = renderProfile; renderProfile = function () { _rp(); renderInv(); const s = $('.phero > small.sub'); if (s) s.innerHTML = 'Tu ID: <b class="pid">' + pname + '#' + ptag + '</b>'; if (HX) $('#profHx').innerHTML = '<div><b>' + HX.p + '</b>Pulso</div><div><b>' + ROMAN[hxRing() - 1] + '</b>Anillo</div><div><b>' + HX.best + '</b>Mejor</div><div><b>' + HX.w + '-' + HX.d + '-' + HX.l + '</b>G-E-P</div>'; }; }
+
+// ---- arranque ----
+invInit(); saveCol();
+hxLoad();
+$('.tut-body > b').textContent = ASSIST;
+renderHome();
+{
+  let intro = false, guided = false;
+  try { intro = localStorage.getItem('lito-intro') === '1'; guided = localStorage.getItem('lito-guided') === '1'; } catch (e) {}
+  setTimeout(() => { if (!intro) introStart(); else if (!guided) guideStart(); else tipFor('home'); }, 60);
+}
+@@ 3112 3113 0
