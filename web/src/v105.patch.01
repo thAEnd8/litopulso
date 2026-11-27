@@ -1,0 +1,14 @@
+@@ 1259 1260 1
+    <p class="hxver"><span class="rec"></span> · v10.5</p>
+@@ 1308 1309 1
+    <p class="ver">Litopulso · v10.5</p>
+@@ 3686 3687 1
+  let t = g.est ? ' · Escudo usado: no perdiste Pulso' : ' · ' + (g.d >= 0 ? '+' : '−') + Math.abs(g.d) + ' de Pulso';
+@@ 3727 3728 1
+    '<p class="rrule">' + ringRule(r.k) + '</p>' + (col.inv && col.inv.est ? '<p class="rest">Escudos: <b>' + col.inv.est + '</b> · protegen tu Pulso si pierdes</p>' : '') +
+@@ 3741 3742 1
+  const chat = n => { col.inv.chat += n; add('ch', '+' + n + ' de chatarra'); }, est = n => { col.inv.est += n; add('es', '+' + n + ' Escudo' + (n > 1 ? 's' : '')); };
+@@ 3884 3885 1
+  el.innerHTML = '<div class="ivg">' + cell('es', iv.est, 'Escudos') + cell('xp', iv.xpb, 'Duelos con XP ×2') + cell('ch', iv.chat, 'Chatarra') + cell('re', nre + '/' + REACTS.length, 'Reacciones') + '</div>' +
+@@ 3887 3888 1
+    '<p class="sub">El Escudo se usa solo cuando pierdes en el Hexx. La chatarra mejora tus módulos en el Garaje.</p>';
