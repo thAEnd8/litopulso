@@ -29,6 +29,22 @@ edit(join(A, 'app', 'build.gradle'), s => s
   .replace(/versionCode \d+/, `versionCode ${maj * 10000 + min * 1000 + build}`)
   .replace(/versionName "[^"]*"/, `versionName "${maj}.${min}.${build}"`));
 
+// firma fija: el mismo certificado en cada compilación para que el APK nuevo se instale encima del anterior
+// (antes Gradle no usaba la llave del repo y cada APK salía firmado distinto)
+{
+  const b64 = readFileSync(join(root, 'res', 'debug.keystore.b64'), 'utf8').replace(/[^A-Za-z0-9+/=]/g, '');
+  writeFileSync(join(A, 'app', 'litopulso.keystore'), Buffer.from(b64, 'base64'));
+  edit(join(A, 'app', 'build.gradle'), s => s.replace('android {', `android {
+    signingConfigs {
+        debug {
+            storeFile file('litopulso.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }`));
+}
+
 edit(join(A, 'variables.gradle'), s => s.replace(/minSdkVersion = \d+/, 'minSdkVersion = 24'));
 
 // solo vertical
