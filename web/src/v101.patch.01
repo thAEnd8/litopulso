@@ -1,0 +1,271 @@
+@@ 1131 1131 30
+/* v10.1: elementos y combos */
+.eb { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: color-mix(in srgb, var(--ec) 22%, #0e1319); box-shadow: 0 0 0 1.5px var(--ec); font-style: normal; flex: none; }
+.eb svg { width: 12px; height: 12px; fill: none; stroke: var(--ec); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.eb.onc { position: absolute; top: 4px; right: 4px; z-index: 2; }
+.card.hasel, .hs .eb.onc + .cico { box-shadow: inset 0 0 0 1.5px var(--ec), 0 0 12px color-mix(in srgb, var(--ec) 35%, transparent); }
+.hs { position: relative; }
+.card.cmb { animation: cmbGlow 1.2s ease-in-out infinite; }
+@keyframes cmbGlow { 50% { box-shadow: 0 0 0 2px #ffd34a, 0 0 18px #ffd34a88; } }
+.card .cbt { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); white-space: nowrap; padding: 1px 6px; border-radius: 6px; background: #ffd34a; color: #2c1c00; font: 700 9.5px var(--font-display); font-style: normal; letter-spacing: .04em; z-index: 2; }
+.sts { display: flex; flex-wrap: wrap; gap: 4px; min-height: 0; margin-top: 2px; }
+.sts:empty { display: none; }
+.sts .st { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px 1px 2px; border-radius: 9px; background: #ffffff10; font: 700 11px var(--font-display); }
+.sts .st .eb { width: 16px; height: 16px; }
+.sts .cmbt { padding: 0 4px; color: #ffd34a; font: 700 10.5px var(--font-display); letter-spacing: .04em; }
+.float.el { color: #fff; font: 800 15px var(--font-display); text-shadow: 0 0 8px #000, 0 0 12px #ffffff66; }
+.float.cmb { color: #ffd34a; font: 800 17px var(--font-display); text-shadow: 0 0 10px #ffd34a88, 0 2px 0 #000; }
+.elpick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+.elc { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; border: 1px solid var(--line); border-radius: 4px 12px 4px 12px; background: var(--panel); color: var(--fg); cursor: pointer; }
+.elc b { font: 700 10.5px var(--font-display); }
+.elc .eb { width: 26px; height: 26px; } .elc .eb svg { width: 16px; height: 16px; }
+.elc.on { border-color: var(--ec); background: color-mix(in srgb, var(--ec) 16%, var(--panel)); box-shadow: 0 0 12px color-mix(in srgb, var(--ec) 40%, transparent); }
+.elc.lk { opacity: .35; }
+.elcards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.elcard { position: relative; min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 14px 2px 6px; border: 1px solid var(--line); border-radius: 4px 12px 4px 12px; background: var(--panel-2); color: var(--fg); cursor: pointer; }
+.elcard .cico { width: 24px; height: 26px; } .elcard b { font-size: 10px; }
+.elcard small { font-size: 9.5px; color: var(--muted); }
+.elcard.has { border-color: var(--ec); box-shadow: 0 0 10px color-mix(in srgb, var(--ec) 30%, transparent); }
+.elcard.has small { color: var(--ec); font-weight: 700; }
+#gElTxt { margin: 10px 0 0; font-size: 13px; line-height: 1.4; }
+.emi.elx { display: inline-flex; align-items: center; gap: 5px; --rc: var(--ec); }
+@@ 1158 1158 6
+    </div>
+    <div class="sec" id="sEl" hidden>
+      <div class="sec-t"><h3>Elementos · hasta 2 cartas</h3><span class="count" id="eCount"></span></div>
+      <div class="elpick" id="gElPick"></div>
+      <div class="elcards" id="gElCards"></div>
+      <p class="sub" id="gElTxt"></p>
+@@ 1209 1210 1
+    <p class="hxver"><span class="rec"></span> · v10.1</p>
+@@ 1258 1259 1
+    <p class="ver">Litopulso · v10.1</p>
+@@ 1366 1367 3
+    <p class="sub">Gana quien deje al rival sin vida; tras 20 turnos gana quien tenga más.</p>
+    <p class="sub"><b>Combos:</b> lo que haces bien prepara tu siguiente turno. Defensa que frena → tu siguiente Ataque +8 (Contraataque). Desvío que esquiva → tu siguiente Habilidad +8 (Finta). Ataque que golpea → tu siguiente Ataque +4 (Ráfaga). Habilidad que golpea → si tu siguiente Defensa o Desvío acierta, +2 de energía (Recarga). El rival también los ve venir.</p>
+    <p class="sub"><b>Elementos:</b> en el Garaje puedes poner un cristal en hasta 2 cartas. Se activa cuando esa carta golpea o acierta. Fuego quema 4 por 2 turnos, Hielo quita 1 de recarga por 2 turnos, Veneno hace 2 por turno durante 3 (se acumula), Energía sube 1 tu racha y Acero te da coraza de 6.</p>
+@@ 1368 1369 1
+    <p class="sub"><b>Eventos de arena:</b> en los turnos 5, 9, 13 y 17 pasa algo que cambia las reglas para los dos (barajar cartas, mano corta, Sobrecarga con racha 2, daño a la mitad o doble, y más). Se avisa un turno antes. Los de los turnos 13 y 17 quitan vida para terminar los duelos largos.</p>
+@@ 1370 1372 2
+    <p class="sub"><b>Arenas:</b> en Inicio eliges la arena (1 a 5); cada una tiene una regla fija: 1 sin regla, 2 golpes +3, 3 energía +1 por turno, 4 Sobrecarga con racha 4, 5 eventos cada 3 turnos. Se desbloquean al vencer a los jefes de los capítulos 1 a 4. Los jefes siempre pelean en la arena de su capítulo.</p>
+    <p class="sub"><b>Dificultad:</b> Fácil (rival con 10 % más de vida; ganas cerca de la mitad), Normal (30 % más de vida y +2 de daño; ganas cerca de 1 de cada 3) y Difícil (60 % más de vida y +3 de daño, aprende cómo juegas; ganas cerca de 1 de cada 5).</p>
+@@ 1447 1448 1
+const CFG = { hp: 100, energy: 5, maxEnergy: 10, regen: 2, bonus: 1, maxTurns: 20, scMax: 5, overDmg: 60, handSize: 5, passiveSlots: 2 };
+@@ 1453 1454 1
+  fast:     { id: 'fast',     name: 'Pulso',     type: 'attack', r: 'b', cost: 2, dmg: 16, text: 'Ataque barato: quita 16 de vida.' },
+@@ 1455 1456 1
+  impeto:   { id: 'impeto',   name: 'Ímpetu',    type: 'attack', r: 'b', cost: 3, dmg: 17, gain: 1, text: 'Quita 17 de vida y, si golpea, recuperas 1 de energía.' },
+@@ 1463 1468 5
+  cauce:    { id: 'cauce',    name: 'Cauce',     type: 'dodge',  r: 'g', cost: 2, gain: 5, text: 'Evita la Habilidad y, si lo logra, recuperas 5 de energía.' },
+  espejismo:{ id: 'espejismo',name: 'Espejismo', type: 'dodge',  r: 'b', cost: 2, drain: 5, text: 'Evita la Habilidad y, si lo logra, el rival pierde 5 de energía.' },
+  skill:    { id: 'skill',    name: 'Fractura',  type: 'skill',  r: 'g', cost: 6, dmg: 31, text: 'Quita 31 de vida. Rompe la Defensa.' },
+  light:    { id: 'light',    name: 'Grieta',    type: 'skill',  r: 'b', cost: 4, dmg: 20, text: 'Habilidad barata: quita 20 de vida.' },
+  crush:    { id: 'crush',    name: 'Implosión', type: 'skill',  r: 'r', cost: 8, dmg: 41, text: 'Habilidad enorme: quita 41 de vida.' },
+@@ 1472 1472 18
+// elementos: un cristal en una carta; se activa cuando esa carta golpea o acierta
+const ELEMS = {
+  fuego:   { n: 'Fuego',   c: '#ff7a3a', t: 'Quema: el rival pierde 4 de vida al final de los 2 turnos siguientes.' },
+  hielo:   { n: 'Hielo',   c: '#8fe0f0', t: 'Congela: el rival recupera 1 de energía menos durante 2 turnos.' },
+  veneno:  { n: 'Veneno',  c: '#8ee26b', t: 'Envenena: 2 de daño por turno durante 3 turnos. Se acumula hasta 3 veces.' },
+  energia: { n: 'Energía', c: '#ffd34a', t: 'Tu racha sube 1 extra: llegas antes a la Sobrecarga.' },
+  acero:   { n: 'Acero',   c: '#b4bdca', t: 'Coraza: el siguiente golpe que recibas hace 6 menos.' }
+};
+const ELEM_IDS = Object.keys(ELEMS), EL_MAX = 2;
+// combos: lo que hiciste bien el turno pasado prepara tu siguiente jugada
+const COMBOS = {
+  cnt: { n: 'Contraataque', t: 'Tu Defensa frenó: tu siguiente Ataque hace +8.' },
+  fin: { n: 'Finta', t: 'Tu Desvío esquivó: tu siguiente Habilidad hace +8.' },
+  raf: { n: 'Ráfaga', t: 'Tu Ataque golpeó: tu siguiente Ataque hace +4.' },
+  rec: { n: 'Recarga', t: 'Tu Habilidad golpeó: si tu siguiente Defensa o Desvío acierta, +2 de energía.' }
+};
+const COMBO_DMG = { cnt: 8, fin: 8, raf: 4 };
+const comboFor = (cmb, type) => cmb && ((cmb === 'cnt' || cmb === 'raf') && type === 'attack' || cmb === 'fin' && type === 'skill' || cmb === 'rec' && (type === 'guard' || type === 'dodge'));
+@@ 1476 1479 3
+  stone:    { robot: 'petreo',  name: 'Piel de piedra',   short: 'Piel',     hp: 11,   text: 'Empiezas con 11 de vida extra.' },
+  fury:     { robot: 'petreo',  name: 'Furia',            short: 'Furia',    fury: 5, text: 'Tus golpes hacen +5 de daño mientras tengas menos vida que el rival.' },
+  g_roca:   { robot: 'granito', name: 'Roca madre',       short: 'Roca',     hp: 11,   text: 'Empiezas con 11 de vida extra.' },
+@@ 1482 1483 1
+  c_reson:  { robot: 'cuarzo',  name: 'Resonancia',       short: 'Resonancia', idle: 1, start: 1, text: 'Empiezas con 1 de energía extra y recuperas 1 extra en los turnos en que nadie recibe daño.' },
+@@ 1484 1485 1
+  c_templa: { robot: 'cuarzo',  name: 'Cristal templado', short: 'Templado', hp: 9,   text: 'Empiezas con 9 de vida extra.' },
+@@ 1560 1563 3
+  petreo:  { name: 'Pétreo',  hp: 93, en: 5, color: '#3fd9d2', short: 'Equilibrado', text: '93 de vida y 5 de energía inicial.' },
+  granito: { name: 'Granito', hp: 108, en: 3, color: '#b79cff', short: 'Resistente',  text: '108 de vida, pero empieza con solo 3 de energía.' },
+  cuarzo:  { name: 'Cuarzo',  hp: 78, en: 8, color: '#8ee26b', short: 'Veloz',       text: '78 de vida, pero empieza con 8 de energía.' }
+@@ 1591 1591 1
+  if (d > 0 && atkF && atkF.cmb && COMBO_DMG[atkF.cmb] && comboFor(atkF.cmb, att.type)) d += COMBO_DMG[atkF.cmb];
+@@ 1637 1638 1
+const EV_LATE = ['colapso', 'desgaste', 'furia', 'pesado'], EV_AT = [5, 9, 13, 17];
+@@ 1686 1688 2
+  easy:   { name: 'Fácil',   text: 'Se equivoca seguido y tiene 10 % más de vida.',
+            over: 0.10, blunder: 0.70, foolish: 0.3, trust: 0,    explore: 0,    adapt: false, smart: false, econ: false, hp: 1.10 },
+@@ 1690 1692 2
+  hard:   { name: 'Difícil', text: 'Aprende cómo juegas, cambia de táctica, cuida su energía, tiene 60 % más de vida y golpea +3. Ganarle es raro (cerca de 20 %).',
+            over: 1.00, blunder: 0,    foolish: 0,   trust: 0.95, explore: 0.06, adapt: true,  smart: true,  econ: true,  hp: 1.60, edge: 3 }
+@@ 1804 1804 5
+function cleanEl(b) {
+  const out = {}; let n = 0;
+  for (const id of (b.cards || [])) { const e = b.el && b.el[id]; if (e && ELEMS[e] && n < EL_MAX) { out[id] = e; n++; } }
+  return out;
+}
+@@ 1808 1809 1
+  return { robot: b.robot, hp, maxHp: hp, en: Math.max(0, Math.min(CFG.maxEnergy, r.en + sum('start'))), sc: 0, hand: b.cards.map(id => CARDS[id]), passives: b.passives.slice(), mods: (b.mods || []).slice(), regen: Math.max(0, CFG.regen + sum('regen')), idle: sum('idle'), bonus: Math.max(CFG.bonus, ...P.map(p => p.def || 0)) + M.reduce((t, p) => t + (p.bonus || 0), 0), fury: sum('fury'), edge: sum('edge'), overAdd: sum('overAdd'), takeAtk: sum('takeAtk'), refAdd: sum('refAdd'), leak: sum('leak'), el: cleanEl(b), burn: 0, chill: 0, pzn: 0, pzt: 0, armor: 0, cmb: null, dot: 0 };
+@@ 1816 1816 3
+  r.cbYou = y.cmb && comboFor(y.cmb, pc.type) ? y.cmb : null; r.cbFoe = f.cmb && comboFor(f.cmb, bc.type) ? f.cmb : null;
+  if (r.toYou > 0 && y.armor) { r.armYou = Math.min(y.armor, r.toYou); r.toYou -= r.armYou; y.armor = 0; }
+  if (r.toFoe > 0 && f.armor) { r.armFoe = Math.min(f.armor, r.toFoe); r.toFoe -= r.armFoe; f.armor = 0; }
+@@ 1830 1832 11
+  if (r.cbYou === 'rec' && r.bonusYou) r.bonusYou += 2; if (r.cbFoe === 'rec' && r.bonusFoe) r.bonusFoe += 2;
+  if (r.cbYou === 'rec' && !r.bonusYou) r.cbYou = null; if (r.cbFoe === 'rec' && !r.bonusFoe) r.cbFoe = null;
+  const elFx = (c, mine, me, op) => {
+    const e = me.el && me.el[c.id]; if (!e || c.type === 'over' || !sY(c, mine)) return null;
+    if (e === 'fuego') op.burn = 2; else if (e === 'hielo') op.chill = 2; else if (e === 'veneno') { op.pzn = Math.min(3, (op.pzn || 0) + 1); op.pzt = 3; } else if (e === 'acero') me.armor = 6; else if (e === 'energia') me.scx = 1;
+    return e;
+  };
+  r.elYou = elFx(pc, true, y, f); r.elFoe = elFx(bc, false, f, y);
+  y.en = Math.min(CFG.maxEnergy, y.en + Math.max(0, (pc.noRegen ? 0 : y.regen) - (y.chill > 0 ? 1 : 0)) + r.bonusYou + (r.toYou === 0 && r.toFoe === 0 ? y.idle : 0));
+  f.en = Math.min(CFG.maxEnergy, f.en + Math.max(0, (bc.noRegen ? 0 : f.regen) - (f.chill > 0 ? 1 : 0)) + r.bonusFoe + (r.toYou === 0 && r.toFoe === 0 ? f.idle : 0));
+  if (y.chill > 0) y.chill--; if (f.chill > 0) f.chill--;
+@@ 1837 1837 3
+  if (y.scx) { y.sc = Math.min(CFG.scMax, y.sc + 1); y.scx = 0; } if (f.scx) { f.sc = Math.min(CFG.scMax, f.sc + 1); f.scx = 0; }
+  const prime = (c, mine) => c.type === 'over' || !sY(c, mine) ? null : c.type === 'guard' ? 'cnt' : c.type === 'dodge' ? 'fin' : c.type === 'attack' ? 'raf' : 'rec';
+  y.cmb = prime(pc, true); f.cmb = prime(bc, false);
+@@ 1848 1849 1
+    g.result = y.hp > f.hp ? 'win' : y.hp < f.hp ? 'lose' : r.toFoe > r.toYou ? 'win' : r.toFoe < r.toYou ? 'lose' : 'draw';
+@@ 1852 1852 1
+    for (const x of [g.you, g.foe]) { let d = 0; if (x.burn > 0) { d += 4; x.burn--; } if (x.pzt > 0) { d += 2 * x.pzn; if (--x.pzt <= 0) x.pzn = 0; } x.dot = d; if (d) x.hp = Math.max(1, x.hp - d); }
+@@ 1854 1855 1
+    else if ((g.evAt || EV_AT).includes(g.turn + 1) && !g.ev) g.evNext = evPick(g, null, g.turn + 1 >= 13);
+@@ 1861 1862 1
+  module.exports = { ELEMS, ELEM_IDS, COMBOS, bossUse, useMod, modWhy, EV_AT, ROBOTS, EVENTS, EV_IDS, evStart, evEnd, MODS, MOD_IDS, passivesOf, applyDifficulty, setPool, DIFFS, DIFF_IDS, CFG, CARDS, OVER, PASSIVES, ROBOTS, CARD_IDS, PASSIVE_IDS, ROBOT_IDS, TYPE_NAME, hit, resolve, streakDelta, can, afford, botPick, validBuild, randomBuild, makeFighter, newGame, applyTurn, statOf };
+@@ 1878 1878 2
+const EICO = { fuego: '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 2 3 1-2 1-4 1-7z"/>', hielo: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9 4l3 2 3-2M9 20l3-2 3 2"/>', veneno: '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/><circle cx="10" cy="14" r="1.2"/>', energia: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', acero: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M8 11h8"/>' };
+const eIco = (e, cls) => '<i class="eb ' + (cls || '') + '" style="--ec:' + ELEMS[e].c + '" title="' + ELEMS[e].n + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + EICO[e] + '</svg></i>';
+@@ 1978 1979 1
+  fast:    { pro: 'Barata (2): casi siempre puedes lanzarla.', con: 'Hace poco daño (16).' },
+@@ 1984 1987 3
+  skill:   { pro: 'Daño alto (31) y rompe la Defensa.', con: 'Cuesta 6: puede dejarte sin energía. El Desvío la evita.' },
+  light:   { pro: 'Habilidad más barata (4) para romper Defensas antes.', con: 'Hace menos daño (20).' },
+  impeto:  { pro: 'Cada golpe que conecta te devuelve 1 de energía.', con: 'Daño medio (17) y la Defensa la frena.' },
+@@ 1990 1992 2
+  cauce:   { pro: 'Evita la Habilidad y recuperas 5 de energía.', con: 'Cuesta 2 y el Ataque la golpea.' },
+  espejismo:{ pro: 'Evita la Habilidad y el rival pierde 5 de energía.', con: 'Cuesta 2 y el Ataque la golpea.' },
+@@ 1994 1996 2
+  crush:   { pro: 'Daño enorme (41).', con: 'Cuesta 8: solo la usas con mucha energía y es fácil de desviar.' },
+  g_roca:   { pro: '+11 de vida: aguanta más golpes.', con: 'No arregla su energía inicial baja.' },
+@@ 1999 2000 1
+  c_reson:  { pro: '+1 de energía al empezar y +1 en turnos sin daño.', con: 'Poco útil si hay golpes en cada turno.' },
+@@ 2001 2002 1
+  c_templa: { pro: '+9 de vida: compensa su fragilidad.', con: 'Sigue siendo el robot con menos vida.' },
+@@ 2006 2007 1
+  fury:    { pro: 'Cuando vas perdiendo, tus golpes hacen +5.', con: 'Solo se activa si tienes menos vida que el rival.' },
+@@ 2037 2038 1
+const TUT_KEYS = { mods: 'duelo-tut-mods', modduel: 'duelo-tut-modduel', arenanew: 'duelo-tut-arenanew', tip_home: 'lito-tip-home', tip_gar: 'lito-tip-gar', tip_rec: 'lito-tip-rec', tip_ent: 'lito-tip-ent', tip_prof: 'lito-tip-prof', tip_rem: 'lito-tip-rem', tip_el: 'lito-tip-el' };
+@@ 2049 2049 1
+  el: [{ t: 'Elementos: elige un cristal y toca una carta. Cuando esa carta golpee o acierte, hace su efecto extra. Máximo 2 cartas.', sel: '#gElPick', pos: 'bot' }],
+@@ 2053 2054 1
+  const pg = n === 'rem' ? 'home' : n === 'el' ? 'gar' : n;
+@@ 2197 2197 1
+  draft.el = cleanEl(draft);
+@@ 2209 2210 1
+    return '<button class="hs r-' + c.r + '" data-card="' + id + '" aria-label="Quitar ' + c.name + '"><span class="cost">' + c.cost + '</span>' + (draft.el && draft.el[id] ? eIco(draft.el[id], 'onc') : '') + cardFace(c) + '</button>'; }).join('');
+@@ 2237 2238 1
+    const T = [['cards', 'Cartas'], ['el', 'Elementos'], ['mods', 'Módulos'], ['pass', 'Pasivas']];
+@@ 2239 2240 2
+    $('#sCards').hidden = gTab !== 'cards'; $('#sMods').hidden = gTab !== 'mods'; $('#sPass').hidden = gTab !== 'pass'; $('#sEl').hidden = gTab !== 'el';
+    if (gTab === 'el' && typeof renderEl === 'function') renderEl(); }
+@@ 2264 2265 1
+$('#gTabs').addEventListener('click', e => { const t = e.target.closest('[data-gt]'); if (!t) return; AU.tap(); gTab = t.dataset.gt; renderGarage(); if (gTab === 'mods') setTimeout(() => runTut(TUT_MODS, 'mods'), 200); if (gTab === 'el') tipFor('el'); });
+@@ 2273 2274 1
+  if (i >= 0) { draft.cards.splice(i, 1); if (draft.el) delete draft.el[id]; }
+@@ 2314 2315 1
+    '<div class="enrow"><span class="lbl">Racha</span><div class="pips sc" id="' + side + '-sc">' + '<span></span>'.repeat(CFG.scMax) + '</div><span class="num sm" id="' + side + '-scn"></span></div><div class="sts" id="' + side + '-sts"></div><div class="mods" id="' + side + '-mods"></div></div>';
+@@ 2342 2343 14
+    '<button class="card r-' + (c.r || 'g') + (G.you.el && G.you.el[c.id] ? ' hasel' : '') + '" data-i="' + i + '" data-t="' + c.type + '" style="--i:' + i + (G.you.el && G.you.el[c.id] ? ';--ec:' + ELEMS[G.you.el[c.id]].c : '') + '" aria-label="' + c.name + ', ' + TYPE_NAME[c.type] + ', cuesta ' + c.cost + (G.you.el && G.you.el[c.id] ? ', ' + ELEMS[G.you.el[c.id]].n : '') + '"><span class="cost">' + c.cost + '</span>' + (G.you.el && G.you.el[c.id] ? eIco(G.you.el[c.id], 'onc') : '') + cardFace(c) + '<small>' + statOf(c) + '</small><em class="cbt" hidden></em></button>').join('');
+}
+function drawStatus() {
+  for (const sd of ['you', 'foe']) {
+    const f = G[sd], el = $('#' + sd + '-sts'); if (!el) continue; const t = [];
+    if (f.burn > 0) t.push(eIco('fuego') + '<b>' + f.burn + '</b>');
+    if (f.chill > 0) t.push(eIco('hielo') + '<b>' + f.chill + '</b>');
+    if (f.pzt > 0) t.push(eIco('veneno') + '<b>×' + f.pzn + '</b>');
+    if (f.armor > 0) t.push(eIco('acero') + '<b>' + f.armor + '</b>');
+    if (f.cmb && !G.over) t.push('<span class="cmbt">' + COMBOS[f.cmb].n + '</span>');
+    el.innerHTML = t.map(x => '<span class="st">' + x + '</span>').join('');
+  }
+  const cm = G.you.cmb;
+  $$('#hand .card').forEach(c => { const on = !G.over && comboFor(cm, c.dataset.t); c.classList.toggle('cmb', !!on); const e = c.querySelector('.cbt'); if (e) { e.hidden = !on; e.textContent = on ? COMBOS[cm].n + (COMBO_DMG[cm] ? ' +' + COMBO_DMG[cm] : ' +2⚡') : ''; } });
+@@ 2346 2347 1
+  drawMods(); drawStatus();
+@@ 2518 2518 7
+  { const EN = { fuego: '¡Quemado!', hielo: '¡Congelado!', veneno: '¡Envenenado!', energia: '+1 racha', acero: '¡Coraza!' };
+    if (r.elYou) floatTxt(r.elYou === 'energia' || r.elYou === 'acero' ? 'you' : 'foe', EN[r.elYou], 'el', 0, 250);
+    if (r.elFoe) floatTxt(r.elFoe === 'energia' || r.elFoe === 'acero' ? 'foe' : 'you', EN[r.elFoe], 'el', 0, 250);
+    if (r.cbYou) floatTxt('you', '¡' + COMBOS[r.cbYou].n + '!', 'cmb', 0, 120);
+    if (r.cbFoe) floatTxt('foe', '¡' + COMBOS[r.cbFoe].n + '!', 'cmb', 0, 120);
+    if (r.armYou) floatTxt('you', 'Coraza −' + r.armYou, 'el', 0, 420);
+    if (r.armFoe) floatTxt('foe', 'Coraza −' + r.armFoe, 'el', 0, 420); }
+@@ 2546 2546 1
+  if (!G.over && (G.you.dot || G.foe.dot)) { for (const sd of ['you', 'foe']) if (G[sd].dot) { floatTxt(sd, '−' + G[sd].dot, 'dmg', G[sd].dot); flash(sd, 'hit', 300); } AU.hit(4); render(); if (!(await wait(650, tok))) return; }
+@@ 2602 2603 1
+  { n: 'Grieta del Hexx', r: 'Los eventos salen cada 3 turnos (3, 6, 9, 12…).' }
+@@ 2620 2621 1
+  if (k === 5 || k === 6) g.evAt = [3, 6, 9, 12, 15, 18];
+@@ 2622 2623 1
+function arenaInfo(k) { return k >= 6 ? { n: 'El Hexx', r: 'Golpes +3 y eventos cada 3 turnos.' } : ARENAS[Math.max(1, k) - 1]; }
+@@ 2655 2655 1
+  if (!PVP.on && !GUIDE.on) { const ne = isBoss ? 2 : HXBOT ? Math.min(2, Math.floor(hxRing() / 2)) : diff === 'hard' ? 2 : diff === 'normal' ? 1 : 0; foeBuild.el = {}; shuffle(foeBuild.cards).slice(0, ne).forEach(id => { foeBuild.el[id] = ELEM_IDS[Math.floor(Math.random() * ELEM_IDS.length)]; }); }
+@@ 3197 3197 1
+  if (b.el != null) { if (typeof b.el !== 'object' || Array.isArray(b.el)) return false; const k = Object.keys(b.el); if (k.length > EL_MAX || k.some(id => !b.cards.includes(id) || !ELEMS[b.el[id]])) return false; }
+@@ 3216 3217 1
+  PVP.myB = { robot: build.robot, cards: build.cards.slice(), passives: build.passives.slice(), el: cleanEl(build) };
+@@ 3459 3460 2
+  col.inv = Object.assign({ est: 0, xpb: 0, chat: 0, re: { hola: 1, buena: 1 }, cr: { fuego: 1 } }, col.inv || {});
+  col.inv.cr = col.inv.cr || { fuego: 1 };
+@@ 3576 3581 6
+  const cry = p => { if (Math.random() < p) out.push(crGrant()); };
+  if (t === 'g') { tk(1); fr(2); add('xp', '+20 XP'); addXp(20); if (Math.random() < 0.3) chat(3 + Math.floor(Math.random() * 3)); cry(0.2); }
+  else if (t === 'b') { tk(2); fr(4); add('xp', '+40 XP'); addXp(40); if (Math.random() < 0.5) { if (!react()) xpc(); } else xpc(); if (Math.random() < 0.15) cosm('b'); cry(0.4); }
+  else if (t === 'r') { tk(3); fr(8); est(1); if (Math.random() < 0.5) cosm('r'); else piece(['r', 'b'], 8); cry(0.7); }
+  else if (t === 'o') { tk(5); fr(15); chat(8); est(2); piece(['r', 'b'], 15); cry(1); }
+  else { tk(8); cry(1); const id = pickMissing(CAT.filter(c => c.r === 'x' && !col.own[c.id]).map(c => c.id)); if (id) { grant(id); add('co', 'Exclusivo del Hexx: ' + CBY[id].n); } else { chat(20); est(3); } if (!react()) xpc(); }
+@@ 3584 3585 1
+const RICO = { tk: '<path d="M3 8a2 2 0 0 0 0 8v3h18v-3a2 2 0 0 0 0-8V5H3z"/>', fr: '<path d="M12 3l7 5-7 13-7-13z"/>', ch: '<path d="M4 15l5-9 4 5 3-3 4 7z"/>', es: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/>', co: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>', pz: '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><rect x="9" y="9" width="6" height="6"/>', re: '<path d="M4 5h16v11H9l-5 4z"/>', cr: '<path d="M12 2l6 6-6 14-6-14z"/><path d="M6 8h12"/>', xp: '<path d="M12 2l3 7 7 1-5 5 1.5 7L12 18l-6.5 4L7 15 2 10l7-1z"/>' };
+@@ 3714 3714 1
+    '<div class="rel">' + ELEM_IDS.map(e => '<span class="emi elx' + ((col.inv.cr || {})[e] > 0 ? '' : ' lk') + '" style="--ec:' + ELEMS[e].c + '">' + eIco(e) + ELEMS[e].n + '</span>').join('') + '</div>' +
+@@ 3716 3716 35
+}
+
+// ---- elementos en el garaje ----
+let gElSel = '';
+function renderEl() {
+  if (!draft || !col || !col.inv) return;
+  draft.el = draft.el || {};
+  const cr = col.inv.cr || {}, used = Object.keys(draft.el).filter(id => draft.cards.includes(id)).length;
+  $('#eCount').textContent = used + '/' + EL_MAX; $('#eCount').classList.toggle('ok', used > 0);
+  $('#gElPick').innerHTML = ELEM_IDS.map(e => { const own = cr[e] > 0, on = gElSel === e; return '<button class="elc' + (on ? ' on' : '') + (own ? '' : ' lk') + '" data-el="' + e + '" style="--ec:' + ELEMS[e].c + '" aria-pressed="' + on + '"' + (own ? '' : ' aria-label="' + ELEMS[e].n + ' (bloqueado)"') + '>' + eIco(e) + '<b>' + ELEMS[e].n + '</b></button>'; }).join('');
+  $('#gElCards').innerHTML = draft.cards.map(id => { const c = CARDS[id], e = draft.el[id]; return '<button class="elcard' + (e ? ' has' : '') + '" data-elcard="' + id + '"' + (e ? ' style="--ec:' + ELEMS[e].c + '"' : '') + '>' + (e ? eIco(e, 'onc') : '') + cardFace(c) + '<small>' + (e ? ELEMS[e].n : 'Sin elemento') + '</small></button>'; }).join('');
+  $('#gElTxt').innerHTML = gElSel ? '<b>' + ELEMS[gElSel].n + ':</b> ' + ELEMS[gElSel].t + ' Toca una de tus cartas para ponérselo.' : 'Elige un cristal y luego toca la carta donde lo quieres. Toca una carta con elemento para quitárselo. Los cristales salen en los remanentes.';
+}
+$('#gElPick').addEventListener('click', e => {
+  const b = e.target.closest('[data-el]'); if (!b) return; AU.tap(); const el = b.dataset.el;
+  if (!((col.inv.cr || {})[el] > 0)) { $('#gElTxt').innerHTML = '<b>' + ELEMS[el].n + ':</b> ' + ELEMS[el].t + ' Aún no tienes este cristal: sale en los remanentes del Hexx.'; return; }
+  gElSel = gElSel === el ? '' : el; renderEl();
+});
+$('#gElCards').addEventListener('click', e => {
+  const b = e.target.closest('[data-elcard]'); if (!b) return; AU.tap(); const id = b.dataset.elcard;
+  draft.el = draft.el || {};
+  if (draft.el[id] && (!gElSel || draft.el[id] === gElSel)) delete draft.el[id];
+  else if (gElSel) {
+    const n = Object.keys(draft.el).filter(k => draft.cards.includes(k) && k !== id).length;
+    if (n >= EL_MAX) { $('#gElTxt').textContent = 'Máximo ' + EL_MAX + ' cartas con elemento. Quita uno primero.'; return; }
+    draft.el[id] = gElSel;
+  } else return;
+  garageChanged();
+});
+function crGrant() {
+  col.inv.cr = col.inv.cr || {};
+  const miss = ELEM_IDS.filter(e => !(col.inv.cr[e] > 0));
+  if (!miss.length) { col.inv.chat += 4; return ['ch', 'Cristal repetido: +4 de chatarra']; }
+  const e = miss[Math.floor(Math.random() * miss.length)]; col.inv.cr[e] = 1;
+  return ['cr', 'Cristal de ' + ELEMS[e].n.toLowerCase() + ': ponlo en una carta en el Garaje'];
