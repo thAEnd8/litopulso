@@ -716,3 +716,28 @@ static func apply_turn(g: Dictionary, pc: Dictionary, bc: Dictionary, rnd: Calla
 		x.shield = false
 		x.immune = false
 	return r
+
+# ---------- arenas y equipo para un robot elegido (menú) ----------
+static func apply_arena(g: Dictionary, k: int) -> void:
+	for f in [g.you, g.foe]:
+		if k == 2:
+			f.edge = f.get("edge", 0) + 3
+		elif k == 3:
+			f.regen += 1
+		elif k == 4:
+			f.scNeed = 4
+			f.arNeed = 4
+	if k == 5:
+		g.evAt = [5, 10, 15, 20, 25]
+
+static func random_build_for(robot: String, rng: Callable) -> Dictionary:
+	while true:
+		var hs: int = min(5, POOL.size())
+		var cards: Array = shuffle(POOL, rng).slice(0, hs)
+		var pas: Array = shuffle(passives_of(robot), rng).slice(0, D.CFG.passiveSlots)
+		var ids: Array = D.CARDS.keys()
+		cards.sort_custom(func(a, c): return ids.find(a) < ids.find(c))
+		var b := {"robot": robot, "cards": cards, "passives": pas}
+		if valid_build(b) == "":
+			return b
+	return {}

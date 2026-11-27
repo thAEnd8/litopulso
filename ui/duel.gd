@@ -5,14 +5,16 @@ const D = preload("res://engine/ldata.gd")
 const LRng = preload("res://engine/lrng.gd")
 const SegBar = preload("res://ui/segbar.gd")
 const Hex = preload("res://ui/hex.gd")
+const Session = preload("res://ui/session.gd")
 const TCOL := {"attack": Color("ee8a4a"), "guard": Color("5a8fe0"), "dodge": Color("3fd9c2"), "skill": Color("9b7be0"), "over": Color("d46be0")}
 const ACC := Color("3fd9d2")
+const ARENA_TINT := [Color(1, 1, 1), Color(1.0, 0.82, 0.62), Color(0.62, 0.85, 1.0), Color(0.82, 0.68, 1.0), Color(1.0, 0.62, 0.55)]
 const FOE_COL := Color("ff8a4a")
 const PANEL_BG := Color("151a23")
 
 var g: Dictionary
 var rng
-var diff := "normal"
+var diff: String = Session.diff
 var busy := false
 var ui := {}
 
@@ -142,6 +144,7 @@ func _set_slot(s: Dictionary, c, placeholder: String) -> void:
 
 func _build_ui() -> void:
 	var bg := TextureRect.new()
+	ui.bg = bg
 	bg.texture = load("res://assets/arenas/arena_1.jpg")
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -218,10 +221,13 @@ func _build_ui() -> void:
 # ---------- partida ----------
 func _new_duel() -> void:
 	busy = false
-	var by: Dictionary = E.random_build(rng.next)
+	var by: Dictionary = E.random_build_for(Session.robot, rng.next)
 	var bf: Dictionary = E.random_build(rng.next)
 	g = E.new_game(by, bf)
 	E.apply_difficulty(g, diff)
+	E.apply_arena(g, Session.arena)
+	ui.bg.texture = load("res://assets/arenas/arena_1.jpg")
+	ui.bg.modulate = ARENA_TINT[Session.arena - 1]
 	ui.foe_img.texture = load("res://assets/robots/robot_%s.png" % g.foe.robot)
 	ui.you_img.texture = load("res://assets/robots/robot_%s.png" % g.you.robot)
 	_set_slot(ui.foe_slot, null, "?")
@@ -253,11 +259,11 @@ func _fill_panel(p: Dictionary, f: Dictionary, name_text: String) -> void:
 	p.hp.text = str(f.hp)
 	p.en.set_values(f.en, 10)
 	p.enl.text = "%d/10" % f.en
-	p.sc.set_values(f.sc, E.over_need(f))
-	p.scl.text = "%d/%d" % [f.sc, E.over_need(f)]
+	p.sc.set_values(min(f.sc, E.over_need(f)), E.over_need(f))
+	p.scl.text = "%d/%d" % [min(f.sc, E.over_need(f)), E.over_need(f)]
 
 func _refresh() -> void:
-	ui.top.text = "TURNO %d DE %d  ·  %s" % [g.turn, D.CFG.maxTurns, D.DIFFS[diff].name.to_upper()]
+	ui.top.text = "TURNO %d DE %d  ·  %s  ·  %s" % [g.turn, D.CFG.maxTurns, D.DIFFS[diff].name.to_upper(), D.ARENAS[Session.arena - 1].n.to_upper()]
 	var evt := ""
 	if g.get("ev", null) != null:
 		evt = "EVENTO: %s (%d turnos)" % [D.EVENTS[g.ev.id].name, g.ev.left]
@@ -271,11 +277,22 @@ func _refresh() -> void:
 	if g.over:
 		var res: String = {"win": "¡GANASTE!", "lose": "PERDISTE", "draw": "EMPATE"}[g.result]
 		ui.log.text = res
-		ui.over.text = "JUGAR DE NUEVO"
-		ui.over.disabled = false
+		ui.over.visible = false
 		_clear_pressed()
-		ui.over.pressed.connect(_new_duel)
+		var rb := Button.new()
+		rb.text = "REVANCHA"
+		rb.custom_minimum_size = Vector2(0, 64)
+		rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rb.pressed.connect(_new_duel)
+		ui.hand.add_child(rb)
+		var mb := Button.new()
+		mb.text = "MENÚ"
+		mb.custom_minimum_size = Vector2(0, 64)
+		mb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mb.pressed.connect(func(): get_tree().change_scene_to_file("res://ui/home.tscn"))
+		ui.hand.add_child(mb)
 		return
+	ui.over.visible = true
 	for c in g.you.hand:
 		ui.hand.add_child(_card_tile(c))
 	var need: int = E.over_need(g.you)
