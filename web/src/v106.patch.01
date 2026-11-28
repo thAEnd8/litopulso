@@ -1,0 +1,7 @@
+@@ 476 476 2
+.pvpclock{white-space:nowrap;flex:none}
+@media (max-width:440px){#duelView .top{flex-wrap:wrap;row-gap:4px}#duelView .top .tcen{order:3;flex-basis:100%;gap:6px}#duelView .top .tools{gap:8px}#duelView .top .pvpclock,#duelView .top .evbox.evicon{margin-left:0}}
+@@ 1259 1260 1
+    <p class="hxver"><span class="rec"></span> · v10.6</p>
+@@ 1308 1309 1
+    <p class="ver">Litopulso · v10.6</p>
